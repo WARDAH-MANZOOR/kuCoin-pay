@@ -6,7 +6,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model Order {
   id            String   @id @default(uuid())
   requestId     String   @unique
@@ -16,14 +15,31 @@ model Order {
   subMerchantId String?
   source        String?
   expireTime    Int?
-  kucoinOrderId String?     // payOrderId from KuCoin
+  kucoinOrderId String?  @unique   // ✅ add @unique here
   qrcodeUrl     String?
   appPayUrl     String?
-  status        String      @default("PENDING")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  refunds       Refund[]
 }
 
+
+model Refund {
+  id              String   @id @default(uuid())
+  refundRequestId String   @unique
+  payOrderId      String
+  refundAmount    Float
+  refundReason    String?
+  status          String   @default("PENDING")
+  kucoinRefundId  String?  // from KuCoin API response (refundId)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 👇 Relation to Order
+  order           Order?   @relation(fields: [payOrderId], references: [kucoinOrderId])
+}
 model WebhookLog {
   id          String   @id @default(uuid())
   eventType   String
