@@ -103,6 +103,141 @@ export const createPayoutOrder = async (payload) => {
     console.log("💾 Payout record + details saved to DB:", payoutRecord.id);
     return response.data;
 };
+/**
+ * Service: Query Payout Info (Chapter 3.10)
+ * Endpoint : /api/v1/withdraw/batch/info
+ * Signature : apiKey,batchNo,requestId,timestamp
+ */
+export const queryPayoutInfo = async (payload) => {
+    const timestamp = Date.now();
+    const { batchNo, requestId } = payload;
+    // 🔹 Validate required fields
+    if (!batchNo && !requestId)
+        throw new Error("Either batchNo or requestId is required.");
+    // 🔹 Step 1 – Prepare signature params
+    const params = {
+        apiKey: process.env.KUCOIN_API_KEY,
+        batchNo: batchNo || "",
+        requestId: requestId || "",
+        timestamp,
+    };
+    // 🔹 Step 2 – Build signature string (exclude empty)
+    const signString = Object.entries(params)
+        .filter(([_, v]) => v !== "" && v !== undefined)
+        .map(([k, v]) => `${k}=${v}`)
+        .join("&");
+    console.log("🧾 Signature String =>", signString);
+    // 🔹 Step 3 – Load private key & sign
+    const privateKeyPath = path.resolve("src/keys/merchant_private.pem");
+    const privateKey = fs.readFileSync(privateKeyPath, "utf8");
+    const signature = sign(signString, privateKey);
+    console.log("🔐 Signature (first 60) =>", signature.slice(0, 60) + "...");
+    // 🔹 Step 4 – Headers
+    const headers = {
+        "PAY-API-SIGN": signature,
+        "PAY-API-KEY": process.env.KUCOIN_API_KEY,
+        "PAY-API-VERSION": "1.0",
+        "PAY-API-TIMESTAMP": timestamp.toString(),
+        "Content-Type": "application/json",
+    };
+    // 🔹 Step 5 – Body
+    const body = batchNo ? { batchNo } : { requestId };
+    console.log("🧰 Body =>", body);
+    // 🔹 Step 6 – Call KuCoin API
+    const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/withdraw/batch/info`;
+    console.log("🚀 POST =>", endpoint);
+    const response = await axios.post(endpoint, body, { headers });
+    console.log("✅ API Response =>", response.data);
+    // 🔹 Step 7 – Update DB record if exists
+    if (response.data?.data) {
+        const data = response.data.data;
+        await prisma.payout.updateMany({
+            where: {
+                OR: [{ batchNo: data.batchNo || null }, { requestId: data.requestId }],
+            },
+            data: {
+                status: data.status || "UNKNOWN",
+                batchNo: data.batchNo || null,
+                updatedAt: new Date(),
+            },
+        });
+        console.log("💾 DB updated with latest payout status.");
+    }
+    return response.data;
+};
+/**
+ * Service: Query Payout Detail (KuCoin Pay API v3.9 – Chapter 3.11)
+ * Endpoint: /api/v1/withdraw/batch/detail
+ * Signature: apiKey,receiverAddress,receiverUID,requestId,timestamp
+ */
+export const queryPayoutDetail = async (payload) => {
+    const timestamp = Date.now();
+    const { requestId, receiverUID, receiverAddress } = payload;
+    // 🔹 Validation
+    if (!requestId)
+        throw new Error("Missing required parameter: requestId");
+    if (!receiverUID && !receiverAddress)
+        throw new Error("Either receiverUID or receiverAddress must be provided");
+    // 🔹 Step 1 – Prepare signature params
+    const params = {
+        apiKey: process.env.KUCOIN_API_KEY,
+        receiverAddress: receiverAddress || "",
+        receiverUID: receiverUID || "",
+        requestId,
+        timestamp,
+    };
+    // 🔹 Step 2 – Build signature string
+    const signString = Object.entries(params)
+        .filter(([_, v]) => v !== "" && v !== undefined)
+        .map(([k, v]) => `${k}=${v}`)
+        .join("&");
+    console.log("🧾 Signature String =>", signString);
+    // 🔹 Step 3 – Load private key & sign
+    const privateKeyPath = path.resolve("src/keys/merchant_private.pem");
+    const privateKey = fs.readFileSync(privateKeyPath, "utf8");
+    const signature = sign(signString, privateKey);
+    console.log("🔐 Signature (first 60) =>", signature.slice(0, 60) + "...");
+    // 🔹 Step 4 – Headers
+    const headers = {
+        "PAY-API-SIGN": signature,
+        "PAY-API-KEY": process.env.KUCOIN_API_KEY,
+        "PAY-API-VERSION": "1.0",
+        "PAY-API-TIMESTAMP": timestamp.toString(),
+        "Content-Type": "application/json",
+    };
+    // 🔹 Step 5 – Body
+    const body = receiverUID
+        ? { requestId, receiverUID }
+        : { requestId, receiverAddress };
+    console.log("🧰 Body =>", body);
+    // 🔹 Step 6 – Send request
+    const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/withdraw/batch/detail`;
+    console.log("🚀 POST =>", endpoint);
+    const response = await axios.post(endpoint, body, { headers });
+    console.log("✅ API Response =>", response.data);
+    // 🔹 Step 7 – Update DB detail status if exists
+    if (response.data?.data?.length) {
+        for (const d of response.data.data) {
+            await prisma.payoutDetail.updateMany({
+                where: {
+                    OR: [
+                        { receiverAddress: d.receiverAddress || null },
+                        { receiverUID: d.receiverUID || null },
+                        { detailId: d.detailId || null },
+                    ],
+                },
+                data: {
+                    status: d.status || "UNKNOWN",
+                    updatedAt: new Date(),
+                },
+            });
+        }
+        console.log("💾 Payout detail statuses updated in DB.");
+    }
+    return response.data;
+};
 export default {
     createPayoutOrder,
+    queryPayoutInfo,
+    queryPayoutDetail
 };

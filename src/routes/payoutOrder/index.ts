@@ -7,6 +7,7 @@ const router = Router();
 
 router.post("/create", payoutOrderController.createPayoutOrder);
 router.post("/query", payoutOrderController.queryPayoutInfo);
+router.post("/detail", payoutOrderController.queryPayoutDetail);
 
 
 export default router;
