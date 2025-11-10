@@ -6,6 +6,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model Order {
   id            String   @id @default(uuid())
   requestId     String   @unique
@@ -15,7 +16,7 @@ model Order {
   subMerchantId String?
   source        String?
   expireTime    Int?
-  kucoinOrderId String?  @unique   // ✅ add @unique here
+  kucoinOrderId String?  @unique
   qrcodeUrl     String?
   appPayUrl     String?
   status        String   @default("PENDING")
@@ -25,7 +26,6 @@ model Order {
   refunds       Refund[]
 }
 
-
 model Refund {
   id              String   @id @default(uuid())
   refundRequestId String   @unique
@@ -33,13 +33,14 @@ model Refund {
   refundAmount    Float
   refundReason    String?
   status          String   @default("PENDING")
-  kucoinRefundId  String?  // from KuCoin API response (refundId)
+  kucoinRefundId  String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   // 👇 Relation to Order
   order           Order?   @relation(fields: [payOrderId], references: [kucoinOrderId])
 }
+
 model Report {
   id          String   @id @default(uuid())
   reportType  String
@@ -49,14 +50,39 @@ model Report {
   status      String
   createdAt   DateTime @default(now())
 
-  @@unique([reportType, reportDate]) // ✅ enforce one record per date+type
+  @@unique([reportType, reportDate]) // ✅ Enforce uniqueness per report type and date
 }
 
-model WebhookLog {
-  id          String   @id @default(uuid())
-  eventType   String
-  payload     Json
-  signature   String?
-  verified    Boolean  @default(false)
-  receivedAt  DateTime @default(now())
+model Payout {
+  id           String   @id @default(uuid())
+  requestId    String   @unique                    // Merchant’s payout request ID
+  batchNo      String?                            // KuCoin Pay batch number
+  payoutType   String                             // onChain or offChain
+  batchName    String                             // Batch name
+  currency     String                             // e.g., USDT
+  chain        String?                            // e.g., TRON, ETH
+  totalAmount  Float                              // Total payout amount
+  totalCount   Int                                // Total number of payout details
+  status       String   @default("PENDING")       // SUCCESS / FAILED / PENDING
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 👇 Relation: one payout → many payout details
+  details      PayoutDetail[]
+}
+
+model PayoutDetail {
+  id              String   @id @default(uuid())
+  detailId        String   @unique                // Merchant’s detail identifier
+  receiverUID     String?                         // KuCoin UID if off-chain
+  receiverAddress String?                         // Wallet address if on-chain
+  amount          Float
+  remark          String?
+  status          String   @default("PENDING")    // SUCCESS / FAILED / PENDING
+  payoutId        String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 👇 Relation: each detail belongs to one payout
+  payout          Payout   @relation(fields: [payoutId], references: [id])
 }
