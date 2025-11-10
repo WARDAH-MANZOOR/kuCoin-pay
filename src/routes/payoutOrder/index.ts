@@ -5,7 +5,8 @@ import { Router } from "express";
 
 const router = Router();
 
-router.post("/", payoutOrderController.createPayoutOrder);
+router.post("/create", payoutOrderController.createPayoutOrder);
+router.post("/query", payoutOrderController.queryPayoutInfo);
 
 
 export default router;
