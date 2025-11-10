@@ -40,6 +40,18 @@ model Refund {
   // 👇 Relation to Order
   order           Order?   @relation(fields: [payOrderId], references: [kucoinOrderId])
 }
+model Report {
+  id          String   @id @default(uuid())
+  reportType  String
+  fileName    String?
+  reportDate  String
+  downloadUrl String?
+  status      String
+  createdAt   DateTime @default(now())
+
+  @@unique([reportType, reportDate]) // ✅ enforce one record per date+type
+}
+
 model WebhookLog {
   id          String   @id @default(uuid())
   eventType   String

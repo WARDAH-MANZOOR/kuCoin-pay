@@ -1,3 +1,4 @@
 import orderController from "./order/index.js";
 import refundController from "./refund/index.js";
-export { orderController, refundController, };
+import reportController from "./report/index.js";
+export { orderController, refundController, reportController };
