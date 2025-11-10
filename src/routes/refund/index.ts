@@ -7,4 +7,5 @@ const router = Router();
 
 router.post("/", refundController.refundOrder);
 router.post("/query", refundController.queryRefund);
+router.post("/querylist", refundController.queryRefundList);
 export default router;
