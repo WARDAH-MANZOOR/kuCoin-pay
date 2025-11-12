@@ -86,8 +86,80 @@ export const createOnchainOrder = async (payload: {
 
 
   return resp.data;
+};/**
+ * Service: Query On-Chain Order (Chapter 3.15)
+Retrieve onchain payment info 
+ * Endpoint: /api/v1/onchain/payment/info
+ */
+export const queryOnchainOrder = async (payload: { requestId?: string; payOrderId?: string }) => {
+  const { requestId, payOrderId } = payload;
+
+  if (!requestId && !payOrderId)
+    throw new Error("Either requestId or payOrderId must be provided");
+
+  const apiKey = process.env.KUCOIN_API_KEY!;
+  const timestamp = Date.now();
+
+  // ✅ Build signature string dynamically — only include non-empty fields
+  let signParts: string[] = [`apiKey=${apiKey}`];
+  if (payOrderId) signParts.push(`payOrderId=${payOrderId}`);
+  if (requestId) signParts.push(`requestId=${requestId}`);
+  signParts.push(`timestamp=${timestamp}`);
+
+  const signString = signParts.join("&");
+
+  console.log("🧾 Signature String =>", signString);
+
+  const privateKey = fs.readFileSync(path.resolve("src/keys/merchant_private.pem"), "utf8");
+  const signature = sign(signString, privateKey);
+
+  const headers = {
+    "PAY-API-SIGN": signature,
+    "PAY-API-KEY": apiKey,
+    "PAY-API-VERSION": "1.0",
+    "PAY-API-TIMESTAMP": timestamp.toString(),
+    "Content-Type": "application/json",
+  };
+  console.log("🧾 Headers =>", headers);
+
+  const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/payment/info`;
+  const body: any = {};
+  if (requestId) body.requestId = requestId;
+  if (payOrderId) body.payOrderId = payOrderId;
+
+  console.log("📦 Body =>", body);
+  console.log("🌐 POST =>", endpoint);
+
+  const resp = await axios.post(endpoint, body, { headers });
+  console.log("✅ API Response =>", resp.data);
+
+  const d = resp.data?.data;
+
+  // ✅ Update local DB if data exists
+  if (d) {
+    await prisma.onchainOrder.updateMany({
+      where: {
+        OR: [
+          { requestId: d.requestId },
+          { kucoinOrderId: d.payOrderId }
+        ],
+      },
+      data: {
+        status: d.status || "UNKNOWN",
+        kucoinOrderId: d.payOrderId || undefined,
+        walletAddress: d.address || undefined,
+        cryptoAmount: d.cryptoAmount ? parseFloat(d.cryptoAmount) : undefined,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  return resp.data;
 };
+
 
 export default{
   createOnchainOrder,
+  queryOnchainOrder,
+
 }
