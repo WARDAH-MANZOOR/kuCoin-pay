@@ -82,8 +82,64 @@ export const queryPayoutDetail = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Controller: Query On-Chain Currency (Chapter 3.12)
+ * Retrieve supported networks for the specific crypto currency 
+ */
+export const queryOnchainCurrency = async (req: Request, res: Response) => {
+  try {
+    console.log("📥 Incoming On-Chain Currency Query Request:", req.body);
+
+    const data = await payoutOrderService.queryOnchainCurrency(req.body);
+
+    res.status(200).json({
+      success: true,
+      message: "On-chain currency details retrieved successfully",
+      data,
+    });
+  } catch (err: any) {
+    console.error("❌ Error querying on-chain currencies:", err.message);
+    if (err.response) {
+      console.error("📩 KuCoin Response Data:", err.response.data);
+      console.error("🌐 Status:", err.response.status);
+    }
+    res.status(500).json({
+      success: false,
+      error: err.message || "Internal Server Error",
+    });
+  }
+};
+
+/** 3.13 ONCHAIN CURRENCY QUOTE — Controller
+ * Retrieve currency exchange rate 
+ */
+export const queryOnchainCurrencyQuote = async (req: Request, res: Response) => {
+  try {
+    console.log("📥 Incoming Onchain Quote Request:", req.body);
+    const data = await payoutOrderService.queryOnchainCurrencyQuote(req.body);
+
+    res.status(200).json({
+      success: true,
+      message: "Onchain currency quote retrieved successfully",
+      data,
+    });
+  } catch (err: any) {
+    console.error("❌ Error querying onchain currency quote:", err.message);
+    if (err.response) {
+      console.error("📩 KuCoin Response Data:", err.response.data);
+      console.error("🌐 Status:", err.response.status);
+    }
+    res.status(500).json({
+      success: false,
+      error: err.message || "Internal Server Error",
+    });
+  }
+};
+
 export default {
   createPayoutOrder,
   queryPayoutInfo,
-  queryPayoutDetail
+  queryPayoutDetail,
+  queryOnchainCurrency,
+  queryOnchainCurrencyQuote
 };

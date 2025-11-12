@@ -308,8 +308,124 @@ export const queryPayoutDetail = async (payload: {
 
   return response.data;
 };
+
+/**
+ * Service: Query On-Chain Currency API (Chapter 3.12)
+ * Retrieve supported networks for the specific crypto currency 
+ * Endpoint: /api/v1/onchain/currency/query
+ * Signature: apiKey, timestamp
+ */
+export const queryOnchainCurrency = async (payload: { cryptoCurrency: string }) => {
+  const timestamp = Date.now();
+  const { cryptoCurrency } = payload;
+
+  if (!cryptoCurrency) {
+    throw new Error("Missing required parameter: cryptoCurrency");
+  }
+
+  // Step 1 – Prepare parameters for signature
+  const params = {
+    apiKey: process.env.KUCOIN_API_KEY,
+    cryptoCurrency,
+    timestamp,
+  };
+
+  // Step 2 – Build signature string
+  const signString = `apiKey=${params.apiKey}&cryptoCurrency=${cryptoCurrency}&timestamp=${timestamp}`;
+  console.log("🧾 Signature String =>", signString);
+
+  // Step 3 – Load private key
+  const privateKeyPath = path.resolve("src/keys/merchant_private.pem");
+  const privateKey = fs.readFileSync(privateKeyPath, "utf8");
+
+  // Step 4 – Generate signature
+  const signature = sign(signString, privateKey);
+  console.log("🔐 Signature (first 60 chars):", signature.slice(0, 60) + "...");
+
+  // Step 5 – Prepare headers
+  const headers = {
+    "PAY-API-SIGN": signature,
+    "PAY-API-KEY": process.env.KUCOIN_API_KEY!,
+    "PAY-API-VERSION": "1.0",
+    "PAY-API-TIMESTAMP": timestamp.toString(),
+    "Content-Type": "application/json",
+  };
+  console.log("📦 Headers =>", headers);
+
+  // Step 6 – Request body
+  const body = { cryptoCurrency };
+  console.log("🧰 Body =>", body);
+
+  // Step 7 – Send request
+  const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/currency/query`;
+  console.log("🚀 POST =>", endpoint);
+
+  const response = await axios.post(endpoint, body, { headers });
+  console.log("✅ API Response =>", response.data);
+
+  return response.data;
+};
+
+/**
+ * 3.13 ONCHAIN CURRENCY QUOTE API
+ * URL: /api/v1/onchain/payment/quote
+ * Signature fields (in EXACT order):
+ *  apiKey, chain, cryptoCurrency, fiatAmount, fiatCurrency, timestamp
+ * Retrieve currency exchange rate 
+ */
+export const queryOnchainCurrencyQuote = async (payload: {
+  fiatCurrency: string;   // e.g. "EUR"
+  fiatAmount: number;     // e.g. 100
+  cryptoCurrency: string; // e.g. "USDT"
+  chain: string;          // e.g. "eth"
+}) => {
+  const { fiatCurrency, fiatAmount, cryptoCurrency, chain } = payload;
+  const timestamp = Date.now();
+
+  if (!fiatCurrency || fiatAmount == null || !cryptoCurrency || !chain) {
+    throw new Error("Missing required parameters: fiatCurrency, fiatAmount, cryptoCurrency, chain");
+  }
+
+  // ✅ Build exact signature string as per docs (no spaces!)
+  const apiKey = process.env.KUCOIN_API_KEY as string;
+  const signString = `apiKey=${apiKey}&chain=${chain}&cryptoCurrency=${cryptoCurrency}&fiatAmount=${String(fiatAmount).trim()}&fiatCurrency=${fiatCurrency}&timestamp=${timestamp}`;
+  console.log("🧾 Signature String =>", signString);
+
+  // 🔐 Sign with private key (RSA-SHA256 → Base64)
+  const privateKeyPath = path.resolve("src/keys/merchant_private.pem");
+  const privateKey = fs.readFileSync(privateKeyPath, "utf8");
+  const signature = sign(signString, privateKey);
+  console.log("🔐 Signature (first 60):", signature.slice(0, 60) + "...");
+
+  const headers = {
+    "PAY-API-SIGN": signature,
+    "PAY-API-KEY": apiKey,
+    "PAY-API-VERSION": "1.0",
+    "PAY-API-TIMESTAMP": timestamp.toString(),
+    "Content-Type": "application/json",
+  };
+  console.log("📦 Headers =>", headers);
+  const body = {
+    fiatCurrency,
+    fiatAmount,
+    cryptoCurrency,
+    chain,
+  };
+  console.log("🧰 Body =>", body);
+
+  const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/payment/quote`;
+  console.log("🚀 POST =>", endpoint);
+
+  const resp = await axios.post(endpoint, body, { headers });
+  console.log("✅ API Response =>", resp.data);
+
+  return resp.data;
+};
+
 export default {
   createPayoutOrder,
   queryPayoutInfo,
-  queryPayoutDetail
+  queryPayoutDetail,
+  queryOnchainCurrency,
+  queryOnchainCurrencyQuote
 };
