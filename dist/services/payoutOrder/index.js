@@ -292,25 +292,18 @@ export const queryOnchainCurrency = async (payload) => {
 export const queryOnchainCurrencyQuote = async (payload) => {
     const { fiatCurrency, fiatAmount, cryptoCurrency, chain } = payload;
     const timestamp = Date.now();
-    // ✅ Validate required params
     if (!fiatCurrency || fiatAmount == null || !cryptoCurrency || !chain) {
         throw new Error("Missing required parameters: fiatCurrency, fiatAmount, cryptoCurrency, chain");
     }
-    // ✅ Build signature string in the SPECIFIED ORDER (no empty values)
+    // ✅ Build exact signature string as per docs (no spaces!)
     const apiKey = process.env.KUCOIN_API_KEY;
-    const signString = `apiKey=${apiKey}` +
-        `&chain=${chain}` +
-        `&cryptoCurrency=${cryptoCurrency}` +
-        `&fiatAmount=${fiatAmount}` +
-        `&fiatCurrency=${fiatCurrency}` +
-        `&timestamp=${timestamp}`;
+    const signString = `apiKey=${apiKey}&chain=${chain}&cryptoCurrency=${cryptoCurrency}&fiatAmount=${String(fiatAmount).trim()}&fiatCurrency=${fiatCurrency}&timestamp=${timestamp}`;
     console.log("🧾 Signature String =>", signString);
-    // 🔐 Sign with merchant private key (SHA256-RSA2048, Base64)
+    // 🔐 Sign with private key (RSA-SHA256 → Base64)
     const privateKeyPath = path.resolve("src/keys/merchant_private.pem");
     const privateKey = fs.readFileSync(privateKeyPath, "utf8");
     const signature = sign(signString, privateKey);
     console.log("🔐 Signature (first 60):", signature.slice(0, 60) + "...");
-    // 📦 Headers
     const headers = {
         "PAY-API-SIGN": signature,
         "PAY-API-KEY": apiKey,
@@ -318,15 +311,19 @@ export const queryOnchainCurrencyQuote = async (payload) => {
         "PAY-API-TIMESTAMP": timestamp.toString(),
         "Content-Type": "application/json",
     };
-    // 📤 Body (per doc)
-    const body = { fiatCurrency, fiatAmount, cryptoCurrency, chain };
+    console.log("📦 Headers =>", headers);
+    const body = {
+        fiatCurrency,
+        fiatAmount,
+        cryptoCurrency,
+        chain,
+    };
     console.log("🧰 Body =>", body);
-    // 🌐 Endpoint
     const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/payment/quote`;
     console.log("🚀 POST =>", endpoint);
     const resp = await axios.post(endpoint, body, { headers });
     console.log("✅ API Response =>", resp.data);
-    return resp.data; // data => { fiatCurrency, fiatAmount, cryptoCurrency, cryptoAmount, chain, precision, ... }
+    return resp.data;
 };
 export default {
     createPayoutOrder,
