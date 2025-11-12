@@ -156,10 +156,53 @@ export const queryOnchainOrder = async (payload: { requestId?: string; payOrderI
 
   return resp.data;
 };
+/**
+ * Service: Query Onchain Order List (KuCoin Pay API 3.16)
+ * Endpoint: /api/v1/onchain/payment/query
+ * Query on-chain payment order
+ */
+export const queryOnchainOrderList = async (payload: {
+  requestId?: string;
+  orderIds?: string[];
+  startTime: number;
+  endTime: number;
+}) => {
+  const { requestId, orderIds, startTime, endTime } = payload;
+  const apiKey = process.env.KUCOIN_API_KEY!;
+  const timestamp = Date.now();
+
+  // ✅ Signature: apiKey, endTime, startTime, timestamp
+  const signString = `apiKey=${apiKey}&endTime=${endTime}&startTime=${startTime}&timestamp=${timestamp}`;
+  console.log("🧾 Signature String =>", signString);
+
+  const privateKey = fs.readFileSync(path.resolve("src/keys/merchant_private.pem"), "utf8");
+  const signature = sign(signString, privateKey);
+
+  const headers = {
+    "PAY-API-SIGN": signature,
+    "PAY-API-KEY": apiKey,
+    "PAY-API-VERSION": "1.0",
+    "PAY-API-TIMESTAMP": timestamp.toString(),
+    "Content-Type": "application/json",
+  };
+  console.log("🧾 Headers =>", headers);
+
+  const body = { requestId, orderIds, startTime, endTime };
+  console.log("📦 Body =>", body);
+
+  const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/payment/query`;
+  console.log("🌐 POST =>", endpoint);
+
+  const resp = await axios.post(endpoint, body, { headers });
+  console.log("✅ API Response =>", resp.data);
+
+  return resp.data;
+};
 
 
 export default{
   createOnchainOrder,
   queryOnchainOrder,
+  queryOnchainOrderList
 
 }
