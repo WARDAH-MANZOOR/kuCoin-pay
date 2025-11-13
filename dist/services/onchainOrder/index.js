@@ -126,25 +126,11 @@ export const queryOnchainOrder = async (payload) => {
  * Query on-chain payment order
  */
 export const queryOnchainOrderList = async (payload) => {
-    const { subMerchantId, status, startAt, endAt, pageNum, pageSize } = payload;
+    const { requestId, orderIds, startTime, endTime } = payload;
     const apiKey = process.env.KUCOIN_API_KEY;
     const timestamp = Date.now();
-    // ✅ Build signature string dynamically
-    const signParts = [`apiKey=${apiKey}`];
-    if (subMerchantId)
-        signParts.push(`subMerchantId=${subMerchantId}`);
-    if (status)
-        signParts.push(`status=${status}`);
-    if (startAt)
-        signParts.push(`startAt=${startAt}`);
-    if (endAt)
-        signParts.push(`endAt=${endAt}`);
-    if (pageNum)
-        signParts.push(`pageNum=${pageNum}`);
-    if (pageSize)
-        signParts.push(`pageSize=${pageSize}`);
-    signParts.push(`timestamp=${timestamp}`);
-    const signString = signParts.join("&");
+    // ✅ Signature: apiKey, endTime, startTime, timestamp
+    const signString = `apiKey=${apiKey}&endTime=${endTime}&startTime=${startTime}&timestamp=${timestamp}`;
     console.log("🧾 Signature String =>", signString);
     const privateKey = fs.readFileSync(path.resolve("src/keys/merchant_private.pem"), "utf8");
     const signature = sign(signString, privateKey);
@@ -155,36 +141,13 @@ export const queryOnchainOrderList = async (payload) => {
         "PAY-API-TIMESTAMP": timestamp.toString(),
         "Content-Type": "application/json",
     };
-    const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/payment/query`;
-    const body = { subMerchantId, status, startAt, endAt, pageNum, pageSize };
+    console.log("🧾 Headers =>", headers);
+    const body = { requestId, orderIds, startTime, endTime };
     console.log("📦 Body =>", body);
+    const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/payment/query`;
     console.log("🌐 POST =>", endpoint);
     const resp = await axios.post(endpoint, body, { headers });
     console.log("✅ API Response =>", resp.data);
-    // Optionally sync orders to DB
-    const list = resp.data?.data?.items || [];
-    for (const item of list) {
-        await prisma.onchainOrder.upsert({
-            where: { requestId: item.requestId },
-            update: {
-                status: item.status,
-                kucoinOrderId: item.payOrderId,
-                cryptoAmount: parseFloat(item.cryptoAmount || 0),
-                updatedAt: new Date(),
-            },
-            create: {
-                requestId: item.requestId,
-                subMerchantId: item.subMerchantId || null,
-                fiatCurrency: item.fiatCurrency || "USDT",
-                fiatAmount: parseFloat(item.fiatAmount || 0),
-                cryptoCurrency: item.cryptoCurrency,
-                cryptoAmount: parseFloat(item.cryptoAmount || 0),
-                chain: item.chain,
-                status: item.status,
-                kucoinOrderId: item.payOrderId || null,
-            },
-        });
-    }
     return resp.data;
 };
 export default {

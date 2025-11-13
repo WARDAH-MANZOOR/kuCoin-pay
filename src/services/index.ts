@@ -3,6 +3,7 @@ import refundService from "./refund/index.js"
 import reportService from "./report/index.js"
 import payoutOrderService from "./payoutOrder/index.js"
 import onchainOrderService from "./onchainOrder/index.js"
+import onchainRefundService from "./onchainRefund/index.js"
 
 
 export {
@@ -10,5 +11,6 @@ export {
     refundService,
     reportService,
     payoutOrderService,
-    onchainOrderService
+    onchainOrderService,
+    onchainRefundService
 };

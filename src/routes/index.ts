@@ -6,6 +6,7 @@ import refund from "./refund/index.js";
 import report from "./report/index.js";
 import payoutOrder from "./payoutOrder/index.js";
 import onchainOrder from "./onchainOrder/index.js";
+import onchainRefund from "./onchainRefund/index.js";
 
 export default function (app: express.Application) {
   app.use("/order", order);
@@ -13,6 +14,8 @@ export default function (app: express.Application) {
   app.use("/report", report);
   app.use("/payout/order", payoutOrder);
   app.use("/onchain/order", onchainOrder);
+  app.use("/onchain/order/refund", onchainRefund);
+
 
 
   

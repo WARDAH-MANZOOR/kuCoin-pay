@@ -1,0 +1,63 @@
+// src/services/onchainRefundService.ts
+import axios from "axios";
+import fs from "fs";
+import path from "path";
+import { PrismaClient } from "@prisma/client";
+import { sign } from "../../utils/signature.js";
+const prisma = new PrismaClient();
+/**
+ * Service: Create Onchain Refund Order (Chapter 3.17)
+ * Endpoint: /api/v1/onchain/refund/create
+ */
+export const createOnchainRefundOrder = async (payload) => {
+    const { requestId, subMerchantId, payOrderId, refundAmount, chain, address, refundReason, reference } = payload;
+    const apiKey = process.env.KUCOIN_API_KEY;
+    const timestamp = Date.now();
+    if (!requestId || !payOrderId || !refundAmount || !chain || !address) {
+        throw new Error("Missing required parameters: requestId, payOrderId, refundAmount, chain, address");
+    }
+    // ✅ Signature string per doc (must follow this exact order)
+    const signParts = [
+        `address=${address}`,
+        `apiKey=${apiKey}`,
+        `chain=${chain}`,
+        `payOrderId=${payOrderId}`,
+        `refundAmount=${refundAmount}`,
+        `requestId=${requestId}`,
+    ];
+    if (subMerchantId)
+        signParts.push(`subMerchantId=${subMerchantId}`);
+    signParts.push(`timestamp=${timestamp}`);
+    const signString = signParts.join("&");
+    console.log("🧾 Signature String =>", signString);
+    const privateKey = fs.readFileSync(path.resolve("src/keys/merchant_private.pem"), "utf8");
+    const signature = sign(signString, privateKey);
+    const headers = {
+        "PAY-API-SIGN": signature,
+        "PAY-API-KEY": apiKey,
+        "PAY-API-VERSION": "1.0",
+        "PAY-API-TIMESTAMP": timestamp.toString(),
+        "Content-Type": "application/json",
+    };
+    console.log("🛡️ Headers =>", headers);
+    const body = { requestId, subMerchantId, payOrderId, refundAmount, chain, address, refundReason, reference };
+    console.log("📦 Body =>", body);
+    const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/refund/create`;
+    console.log("🌐 POST =>", endpoint);
+    const resp = await axios.post(endpoint, body, { headers });
+    console.log("✅ API Response =>", resp.data);
+    // ✅ Save refund record to DB
+    const data = resp.data?.data;
+    await prisma.refund.create({
+        data: {
+            refundRequestId: requestId,
+            payOrderId,
+            refundAmount,
+            refundReason: refundReason || null,
+            kucoinRefundId: data?.refundId || null,
+            status: resp.data?.success ? "SUCCESS" : "FAILED",
+        },
+    });
+    return resp.data;
+};
+export default { createOnchainRefundOrder };
