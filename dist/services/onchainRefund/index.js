@@ -60,4 +60,89 @@ export const createOnchainRefundOrder = async (payload) => {
     });
     return resp.data;
 };
-export default { createOnchainRefundOrder };
+export const queryOnchainRefundOrder = async (payload) => {
+    const { refundId, requestId } = payload;
+    if (!refundId && !requestId) {
+        throw new Error("Either refundId or requestId must be provided");
+    }
+    const apiKey = process.env.KUCOIN_API_KEY;
+    const timestamp = Date.now();
+    // ✅ Signature order EXACT per documentation
+    const signParts = [`apiKey=${apiKey}`];
+    if (refundId)
+        signParts.push(`refundId=${refundId}`);
+    if (requestId)
+        signParts.push(`requestId=${requestId}`);
+    signParts.push(`timestamp=${timestamp}`);
+    const signString = signParts.join("&");
+    console.log("🧾 Signature String =>", signString);
+    const privateKey = fs.readFileSync(path.resolve("src/keys/merchant_private.pem"), "utf8");
+    const signature = sign(signString, privateKey);
+    const headers = {
+        "PAY-API-SIGN": signature,
+        "PAY-API-KEY": apiKey,
+        "PAY-API-VERSION": "1.0",
+        "PAY-API-TIMESTAMP": timestamp.toString(),
+        "Content-Type": "application/json",
+    };
+    console.log("🛡️ Headers =>", headers);
+    const body = { refundId, requestId };
+    console.log("📦 Body =>", body);
+    const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/refund/info`;
+    console.log("🌐 POST =>", endpoint);
+    const resp = await axios.post(endpoint, body, { headers });
+    console.log("✅ API Response =>", resp.data);
+    // Optional DB sync
+    if (resp.data?.data) {
+        const r = resp.data.data;
+        await prisma.refund.updateMany({
+            where: {
+                OR: [
+                    { kucoinRefundId: r.refundId },
+                    { refundRequestId: r.requestId }
+                ],
+            },
+            data: {
+                status: r.status || "UNKNOWN",
+                refundAmount: parseFloat(r.refundAmount || 0),
+                refundReason: r.refundReason || null,
+                updatedAt: new Date(),
+            },
+        });
+    }
+    return resp.data;
+};
+export const queryOnchainRefundOrderList = async (payload) => {
+    const { pageNum = 1, pageSize = 10, startTime, endTime } = payload;
+    if (!startTime || !endTime) {
+        throw new Error("startTime and endTime are required");
+    }
+    const apiKey = process.env.KUCOIN_API_KEY;
+    const timestamp = Date.now();
+    // ✅ EXACT signature order per documentation
+    const signString = `apiKey=${apiKey}&endTime=${endTime}&startTime=${startTime}&timestamp=${timestamp}`;
+    console.log("🧾 Signature String =>", signString);
+    const privateKey = fs.readFileSync(path.resolve("src/keys/merchant_private.pem"), "utf8");
+    const signature = sign(signString, privateKey);
+    const headers = {
+        "PAY-API-SIGN": signature,
+        "PAY-API-KEY": apiKey,
+        "PAY-API-VERSION": "1.0",
+        "PAY-API-TIMESTAMP": timestamp.toString(),
+        "Content-Type": "application/json",
+    };
+    console.log("🛡️ Headers =>", headers);
+    const body = {
+        pageNum,
+        pageSize,
+        startTime,
+        endTime,
+    };
+    console.log("📦 Body =>", body);
+    const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/refund/query`;
+    console.log("🌐 POST =>", endpoint);
+    const resp = await axios.post(endpoint, body, { headers });
+    console.log("✅ API Response =>", resp.data);
+    return resp.data;
+};
+export default { createOnchainRefundOrder, queryOnchainRefundOrder, queryOnchainRefundOrderList };

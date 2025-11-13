@@ -47,7 +47,32 @@ export const queryOnchainRefundOrder = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const queryOnchainRefundOrderList = async (req: Request, res: Response) => {
+  try {
+    console.log("📥 Incoming Query Onchain Refund List:", req.body);
+
+    const data = await onchainRefundService.queryOnchainRefundOrderList(req.body);
+
+    res.status(200).json({
+      success: true,
+      message: "Onchain refund list retrieved successfully",
+      data,
+    });
+  } catch (err: any) {
+    console.error("❌ Error:", err.message);
+    if (err.response) {
+      console.error("📩 KuCoin Response:", err.response.data);
+    }
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+};
+
 export default {
   createOnchainRefundOrder,
-  queryOnchainRefundOrder
+  queryOnchainRefundOrder,
+  queryOnchainRefundOrderList
 };
