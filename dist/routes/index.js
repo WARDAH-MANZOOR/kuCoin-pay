@@ -4,6 +4,7 @@ import report from "./report/index.js";
 import payoutOrder from "./payoutOrder/index.js";
 import onchainOrder from "./onchainOrder/index.js";
 import onchainRefund from "./onchainRefund/index.js";
+import webhook from "./webhook/index.js";
 export default function (app) {
     app.use("/order", order);
     app.use("/refund", refund);
@@ -11,4 +12,5 @@ export default function (app) {
     app.use("/payout/order", payoutOrder);
     app.use("/onchain/order", onchainOrder);
     app.use("/onchain/order/refund", onchainRefund);
+    app.use("/webhook", webhook);
 }

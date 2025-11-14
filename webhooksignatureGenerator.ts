@@ -42,8 +42,8 @@ const WEBHOOK_TYPE: "ORDER" | "REFUND" | "PAYOUT" | "ONCHAIN_PAYMENT" | "ONCHAIN
 const SAMPLE = {
   ORDER: {
     orderType: "TRADE",
-    requestId: "TXN20250001",
-    payOrderId: "kpo_123456789",
+    requestId: "1763124196024",
+    payOrderId: "kpt_2025dummy123456",
     orderAmount: "20",
     orderCurrency: "USDT",
     reference: "my-reference",
@@ -174,3 +174,6 @@ console.log("PAY-API-TIMESTAMP:", TIMESTAMP);
 console.log("PAY-API-SIGN:", signature);
 console.log("PAY-API-VERSION: 1.0");
 console.log("----------------------------------------\n");
+console.log("📌 Postman Body:");
+console.log(JSON.stringify(WEBHOOK_BODY, null, 2));
+console.log("\n=====================================================");

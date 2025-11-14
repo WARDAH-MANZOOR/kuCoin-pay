@@ -1,6 +1,10 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import dotenv from "dotenv";
+dotenv.config();
+
+
 /**
  * Generate RSA-SHA256 signature (KuCoin Pay Spec)
  * @param dataString - Sorted string like "apiKey=xxx&orderAmount=10&..."
