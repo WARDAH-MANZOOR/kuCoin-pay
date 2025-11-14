@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
-import { buildSignatureString, sign } from "../../utils/signature.js";
+import {  sign } from "../../utils/signature.js";
 import { PrismaClient } from "@prisma/client";
 import { orderService } from "services/index.js";
 

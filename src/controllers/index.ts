@@ -4,6 +4,7 @@ import reportController from "./report/index.js";
 import payoutOrderController from "./payoutOrder/index.js";
 import onchainOrderController from "./onchainOrder/index.js";
 import onchainRefundController from "./onchainRefund/index.js";
+import webhookController from "./webhook/index.js";
 
 export {
   orderController,
@@ -11,6 +12,7 @@ export {
   reportController,
   payoutOrderController,
   onchainOrderController,
-  onchainRefundController
+  onchainRefundController,
+  webhookController
   
 };

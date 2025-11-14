@@ -4,6 +4,7 @@ import reportService from "./report/index.js"
 import payoutOrderService from "./payoutOrder/index.js"
 import onchainOrderService from "./onchainOrder/index.js"
 import onchainRefundService from "./onchainRefund/index.js"
+import webhookService from "./webhook/index.js"
 
 
 export {
@@ -12,5 +13,6 @@ export {
     reportService,
     payoutOrderService,
     onchainOrderService,
-    onchainRefundService
+    onchainRefundService,
+    webhookService
 };
