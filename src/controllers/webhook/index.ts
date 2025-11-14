@@ -1,18 +1,19 @@
 import axios from "axios";
 import fs from "fs";
 import path from "path";
+import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { sign } from "../../utils/signature.js";
+import { sign, verifyKucoinWebhookSignature } from "../../utils/signature.js";
+import { webhookService } from "services/index.js";
 
 const prisma = new PrismaClient();
 
 
-
 export const handleWebhook = async (req: Request, res: Response) => {
   try {
-    const timestamp = req.headers("PAY-API-TIMESTAMP");
-    const signature = req.headers("PAY-API-SIGN");
-    const version = req.headers("PAY-API-VERSION");
+    const timestamp = req.get("PAY-API-TIMESTAMP");
+    const signature = req.get("PAY-API-SIGN");
+    const version = req.get("PAY-API-VERSION");
     const body = req.body as any;
 
     console.log("📩 KuCoin Webhook:", { headers: req.headers, body });
@@ -26,7 +27,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
     }
 
     // 2) Handle by type
-    await handleKucoinWebhookEvent(body);
+    await webhookService.handleKucoinWebhookEvent(body);
 
     // 3) Always return 200 if processed (even if you ignore some events)
     return res.status(200).send("ok");
@@ -38,5 +39,6 @@ export const handleWebhook = async (req: Request, res: Response) => {
 };
 
 export default {
+  handleWebhook
 
 }
