@@ -1,190 +1,133 @@
-// // import axios from "axios";
-// // import fs from "fs";
-// // import path from "path";
-// // import { Request, Response } from "express";
-// // import { PrismaClient } from "@prisma/client";
-// // import { sign } from "../../utils/signature.js";
+import axios from "axios";
+import fs from "fs";
+import path from "path";
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
+import { sign } from "../../utils/signature.js";
 
-// // const prisma = new PrismaClient();
+const prisma = new PrismaClient();
 
+async function handleKucoinWebhookEvent(body: any) {
+  switch (body.orderType) {
 
-// // async function handleKucoinWebhookEvent(body: any) {
-// //   switch (body.orderType) {
+    /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      4.1 TRADE WEBHOOK
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
+    case "TRADE":
+      await prisma.order.updateMany({
+        where: { kucoinOrderId: body.payOrderId },
+        data: {
+          status: body.status,
+          reference: body.reference || null,
+        },
+      });
+      break;
 
-// //     /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// //       4.1 TRADE (NORMAL ORDER PAYMENT) WEBHOOK
-// //       Fields:
-// //       requestId, payOrderId, status, orderCurrency,
-// //       orderAmount, goods[], reference, subMerchantId,
-// //       payTime, canRefundAmount, refundCurrency,
-// //       errorReason, orderType="TRADE"
-// //     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
-// //     case "TRADE":
-// //       await prisma.order.updateMany({
-// //         where: { payOrderId: body.payOrderId },
-// //         data: {
-// //           status: body.status,
-// //           payTime: body.payTime ? new Date(body.payTime) : null,
-// //           canRefundAmount: body.canRefundAmount || null,
-// //           refundCurrency: body.refundCurrency || null,
-// //           errorReason: body.errorReason || null,
-// //           reference: body.reference || null,
-// //           updatedAt: new Date(),
-// //         },
-// //       });
-// //       break;
+    /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      4.2 REFUND WEBHOOK
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
+    case "REFUND":
+      await prisma.refund.updateMany({
+        where: { kucoinRefundId: body.refundId },
+        data: {
+          status: body.status,
+          refundAmount: parseFloat(body.refundAmount || "0"),
+          refundReason: body.refundReason || null,
+        },
+      });
+      break;
 
-// //     /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// //       4.2 REFUND NOTIFICATION
-// //       (orderType = REFUND)
-// //       Fields:
-// //       merchantId, subMerchantId, requestId, refundId,
-// //       payID, refundAmount, remainingRefundAmount,
-// //       status (only SUCCEEDED sent), refundFinishTime,
-// //       refundCurrency, remainingRefundCurrency, reference,
-// //       refundReason
-// //     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
-// //     case "REFUND":
-// //       await prisma.refund.updateMany({
-// //         where: { kucoinRefundId: body.refundId },
-// //         data: {
-// //           status: body.status,
-// //           refundAmount: parseFloat(body.refundAmount || 0),
-// //           remainingRefundAmount: parseFloat(
-// //             body.remainingRefundAmount || 0
-// //           ),
-// //           refundCurrency: body.refundCurrency,
-// //           refundReason: body.refundReason || null,
-// //           refundFinishTime: body.refundFinishTime
-// //             ? new Date(body.refundFinishTime)
-// //             : null,
-// //           updatedAt: new Date(),
-// //         },
-// //       });
-// //       break;
+    /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      4.3 PAYOUT WEBHOOK
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
+    case "PAYOUT":
+      const payout = await prisma.payout.upsert({
+        where: { requestId: body.requestId },
+        update: {
+          batchNo: body.batchNo,
+          payoutType: body.payoutType,
+          totalAmount: parseFloat(body.totalAmount),
+          totalCount: body.totalCount,
+          status: body.status,
+        },
+        create: {
+          requestId: body.requestId,
+          batchNo: body.batchNo,
+          batchName: body.batchName,
+          currency: body.currency,
+          payoutType: body.payoutType,
+          totalAmount: parseFloat(body.totalAmount),
+          totalCount: body.totalCount,
+          status: body.status,
+        },
+      });
 
-// //     /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// //       4.3 PAYOUT NOTIFICATION
-// //       Fields:
-// //       orderType="PAYOUT", batchNo, batchName, currency,
-// //       payoutType, processingFee, requestId, status,
-// //       totalAmount, totalCount, totalPaidAmount, totalPayoutFee,
-// //       withdrawDetailDtoList[]
-// //     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
-// //     case "PAYOUT":
-// //       await prisma.payoutBatch.upsert({
-// //         where: { batchNo: body.batchNo },
-// //         update: {
-// //           status: body.status,
-// //           payoutType: body.payoutType,
-// //           totalAmount: body.totalAmount,
-// //           totalCount: body.totalCount,
-// //           totalPaidAmount: body.totalPaidAmount,
-// //           totalPayoutFee: body.totalPayoutFee,
-// //           processingFee: body.processingFee,
-// //           updatedAt: new Date(),
-// //         },
-// //         create: {
-// //           batchNo: body.batchNo,
-// //           batchName: body.batchName,
-// //           status: body.status,
-// //           payoutType: body.payoutType,
-// //           currency: body.currency,
-// //           requestId: body.requestId,
-// //           totalAmount: body.totalAmount,
-// //           totalCount: body.totalCount,
-// //           totalPaidAmount: body.totalPaidAmount,
-// //           totalPayoutFee: body.totalPayoutFee,
-// //           processingFee: body.processingFee,
-// //         },
-// //       });
+      if (Array.isArray(body.withdrawDetailDtoList)) {
+        for (const d of body.withdrawDetailDtoList) {
+          await prisma.payoutDetail.upsert({
+            where: { detailId: d.detailId },
+            update: {
+              receiverUID: d.receiverUID || null,
+              receiverAddress: d.receiverAddress || null,
+              amount: parseFloat(d.amount),
+              remark: d.remark || null,
+              status: d.status,
+            },
+            create: {
+              detailId: d.detailId,
+              payoutId: payout.id,
+              receiverUID: d.receiverUID || null,
+              receiverAddress: d.receiverAddress || null,
+              amount: parseFloat(d.amount),
+              remark: d.remark || null,
+              status: d.status,
+            },
+          });
+        }
+      }
+      break;
 
-// //       // Save payout details
-// //       if (Array.isArray(body.withdrawDetailDtoList)) {
-// //         for (const d of body.withdrawDetailDtoList) {
-// //           await prisma.payoutDetail.upsert({
-// //             where: { detailId: d.detailId },
-// //             update: {
-// //               status: d.status,
-// //               amount: d.amount,
-// //               receiverAddress: d.receiverAddress,
-// //               receiverUID: d.receiverUID,
-// //               remark: d.remark,
-// //             },
-// //             create: {
-// //               detailId: d.detailId,
-// //               batchNo: body.batchNo,
-// //               status: d.status,
-// //               amount: d.amount,
-// //               receiverAddress: d.receiverAddress,
-// //               receiverUID: d.receiverUID,
-// //               remark: d.remark,
-// //             },
-// //           });
-// //         }
-// //       }
-// //       break;
+    /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      4.4 ONCHAIN PAYMENT WEBHOOK
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
+    case "ONCHAIN_PAYMENT":
+      await prisma.onchainOrder.updateMany({
+        where: { requestId: body.requestId },
+        data: {
+          subMerchantId: body.subMerchantId || null,
+          status: body.status,
+          chain: body.chain,
+          cryptoCurrency: body.currency,
+          cryptoAmount: parseFloat(body.paymentAmount),
+          reference: body.reference || null,
+          kucoinOrderId: body.payOrderId,
+        },
+      });
+      break;
 
-// //     /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// //       4.4 ONCHAIN PAYMENT NOTIFICATION
-// //       Fields:
-// //       orderType="ONCHAIN_PAYMENT"
-// //       requestId, payOrderId, chain, currency,
-// //       paymentAmount, paymentCurrency, assetUniqueId,
-// //       status, paymentStatus, paymentOrderType,
-// //       subMerchantId
-// //     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
-// //     case "ONCHAIN_PAYMENT":
-// //       await prisma.onchainOrder.updateMany({
-// //         where: { payOrderId: body.payOrderId },
-// //         data: {
-// //           chain: body.chain,
-// //           currency: body.currency,
-// //           status: body.status,
-// //           paymentStatus: body.paymentStatus,
-// //           paymentAmount: body.paymentAmount,
-// //           paymentCurrency: body.paymentCurrency,
-// //           assetUniqueId: body.assetUniqueId,
-// //           updatedAt: new Date(),
-// //         },
-// //       });
-// //       break;
+    /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      4.5 ONCHAIN REFUND WEBHOOK
+      (mapped to Refund table)
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
+    case "ONCHAIN_REFUND":
+      await prisma.refund.updateMany({
+        where: { kucoinRefundId: body.refundId },
+        data: {
+          status: body.status,
+          refundAmount: parseFloat(body.refundAmount),
+          refundReason: body.refundReason || null,
+        },
+      });
+      break;
 
-// //     /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// //       4.5 ONCHAIN REFUND NOTIFICATION
-// //       Fields:
-// //       orderType="ONCHAIN_REFUND"
-// //       refundId, requestId, payOrderId, refundAmount,
-// //       refundCurrency, remainingRefundAmount,
-// //       remainingRefundCurrency, chain, feeAmount,
-// //       assetUniqueId, reference, refundReason
-// //     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
-// //     case "ONCHAIN_REFUND":
-// //       await prisma.onchainRefund.updateMany({
-// //         where: { refundId: body.refundId },
-// //         data: {
-// //           status: body.status,
-// //           refundAmount: body.refundAmount,
-// //           refundCurrency: body.refundCurrency,
-// //           remainingRefundAmount: body.remainingRefundAmount,
-// //           remainingRefundCurrency: body.remainingRefundCurrency,
-// //           chain: body.chain,
-// //           feeAmount: body.feeAmount,
-// //           assetUniqueId: body.assetUniqueId,
-// //           reference: body.reference,
-// //           refundReason: body.refundReason,
-// //           updatedAt: new Date(),
-// //         },
-// //       });
-// //       break;
-
-// //     default:
-// //       console.warn("⚠️ Unknown webhook event type:", body.orderType);
-// //   }
-// // }
+    default:
+      console.warn("⚠️ Unknown webhook event:", body.orderType);
+  }
+}
 
 
-// export default{
+
+export default{
     
-//     handleKucoinWebhookEvent
-// }
+    handleKucoinWebhookEvent
+}
