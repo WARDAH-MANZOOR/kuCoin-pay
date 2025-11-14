@@ -17,7 +17,7 @@ const dataString = Object.entries(params)
   .join("&");
 
 // Keys
-const merchantPrivateKey = fs.readFileSync("./src/keys/merchant_private.pem", "utf-8");
+const merchantPrivateKey = fs.readFileSync("./src/keys/kuCoin_private.pem", "utf-8");
 const kuCoinPublicKey = fs.readFileSync("./src/keys/kuCoin_public.pem", "utf-8");
 
 const signature = sign(dataString, merchantPrivateKey);

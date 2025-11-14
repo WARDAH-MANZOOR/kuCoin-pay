@@ -37,5 +37,5 @@ function generateKeys(prefix: string): void {
 }
 
 // ✅ Create merchant + kuCoin key pairs
-generateKeys("merchant");
+// generateKeys("merchant");
 generateKeys("kuCoin");
