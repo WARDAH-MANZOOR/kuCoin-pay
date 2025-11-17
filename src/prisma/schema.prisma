@@ -8,23 +8,49 @@ datasource db {
 }
 
 model Order {
-  id            String   @id @default(uuid())
-  requestId     String   @unique
-  orderAmount   Float
-  orderCurrency String
-  reference     String?
-  subMerchantId String?
-  source        String?
-  expireTime    Int?
-  kucoinOrderId String?  @unique
-  qrcodeUrl     String?
-  appPayUrl     String?
-  status        String   @default("PENDING")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String   @id @default(uuid())
 
-  refunds       Refund[]
+  // REQUIRED (Create Order API)
+  requestId          String   @unique
+  orderAmount        Float
+  orderCurrency      String
+  goods              Json
+  returnUrl          String
+  cancelUrl          String
+  source             String    // ANDROID / IOS / WEB
+
+  // OPTIONAL (Create Order API)
+  reference          String?
+  subMerchantId      String?
+  expireTime         Int?
+  payRegion          String?    // NEW (optional)
+
+  // INTERNAL (ALWAYS TRADE)
+  orderType          String   @default("TRADE") // NEW (from webhook spec)
+
+  // RESPONSE (From Create Order API)
+  kucoinOrderId      String?  @unique
+  qrcode             String?
+  qrcodeUrl          String?
+  appPayUrl          String?
+
+  // WEBHOOK DATA
+  status             String   @default("PENDING")
+  payTime            BigInt?
+
+  canRefundAmount    Float?
+  refundCurrency     String?
+  errorReason        String?
+  payerUserId        String?
+  retrieveKycStatus  Boolean?
+  payerDetail        String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  refunds            Refund[]
 }
+
 
 model Refund {
   id              String   @id @default(uuid())
@@ -34,12 +60,22 @@ model Refund {
   refundReason    String?
   status          String   @default("PENDING")
   kucoinRefundId  String?
+  payID                   String?         // webhook: payID
+  refundCurrency          String?
+  remainingRefundAmount   Float?
+  remainingRefundCurrency String?
+  refundFinishTime        BigInt?
+  reference               String?
+  assetUniqueId           String?   // for onchain refunds
+  chain                   String?
+  feeAmount               Float?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   // 👇 Relation to Order
   order           Order?   @relation(fields: [payOrderId], references: [kucoinOrderId])
 }
+
 
 model Report {
   id          String   @id @default(uuid())
@@ -63,6 +99,11 @@ model Payout {
   chain        String?                            // e.g., TRON, ETH
   totalAmount  Float                              // Total payout amount
   totalCount   Int                                // Total number of payout details
+  
+  totalPaidAmount Float?
+  processingFee   Float?
+  totalPayoutFee  Float?
+
   status       String   @default("PENDING")       // SUCCESS / FAILED / PENDING
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -80,12 +121,15 @@ model PayoutDetail {
   remark          String?
   status          String   @default("PENDING")    // SUCCESS / FAILED / PENDING
   payoutId        String
+  payoutFee       Float?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   // 👇 Relation: each detail belongs to one payout
   payout          Payout   @relation(fields: [payoutId], references: [id])
 }
+
+
 model OnchainOrder {
   id              String   @id @default(uuid())
   requestId       String   @unique
@@ -100,6 +144,12 @@ model OnchainOrder {
   walletAddress   String?
   precision       Int?
   expireTime      Int?
+
+  assetUniqueId       String?
+  paymentOrderType    String?
+  paymentStatus       String?
+  paymentCurrency     String?
+
   status          String   @default("PENDING")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

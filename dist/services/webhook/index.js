@@ -5,12 +5,34 @@ async function handleKucoinWebhookEvent(body) {
         /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           4.1 TRADE WEBHOOK
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
+        // case "TRADE":
+        //   await prisma.order.updateMany({
+        //     where: { kucoinOrderId: body.payOrderId },
+        //     data: {
+        //       status: body.status,
+        //       reference: body.reference || null,
+        //     },
+        //   });
+        //   break;
         case "TRADE":
             await prisma.order.updateMany({
                 where: { kucoinOrderId: body.payOrderId },
                 data: {
                     status: body.status,
+                    orderAmount: parseFloat(body.orderAmount),
+                    orderCurrency: body.orderCurrency,
+                    goods: body.goods || [],
                     reference: body.reference || null,
+                    subMerchantId: body.subMerchantId || null,
+                    payTime: body.payTime ? BigInt(body.payTime) : null,
+                    canRefundAmount: body.canRefundAmount
+                        ? parseFloat(body.canRefundAmount)
+                        : null,
+                    refundCurrency: body.refundCurrency || null,
+                    errorReason: body.errorReason || null,
+                    payerUserId: body.payerUserId || null,
+                    retrieveKycStatus: body.retrieveKycStatus ?? null,
+                    payerDetail: body.payerDetail || null,
                 },
             });
             break;
