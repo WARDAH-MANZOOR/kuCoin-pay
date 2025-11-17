@@ -252,13 +252,36 @@ async function handleKucoinWebhookEvent(body) {
           4.5 ONCHAIN REFUND WEBHOOK
           (mapped to Refund table)
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
+        // case "ONCHAIN_REFUND":
+        //   await prisma.refund.updateMany({
+        //     where: { kucoinRefundId: body.refundId },
+        //     data: {
+        //       status: body.status,
+        //       refundAmount: parseFloat(body.refundAmount),
+        //       refundReason: body.refundReason || null,
+        //     },
+        //   });
+        //   break;
         case "ONCHAIN_REFUND":
             await prisma.refund.updateMany({
                 where: { kucoinRefundId: body.refundId },
                 data: {
+                    refundRequestId: body.requestId,
+                    payID: body.payOrderId,
+                    refundAmount: body.refundAmount ? parseFloat(body.refundAmount) : undefined,
+                    refundCurrency: body.refundCurrency || null,
+                    remainingRefundAmount: body.remainingRefundAmount
+                        ? parseFloat(body.remainingRefundAmount)
+                        : undefined,
+                    remainingRefundCurrency: body.remainingRefundCurrency || null,
                     status: body.status,
-                    refundAmount: parseFloat(body.refundAmount),
+                    subMerchantId: body.subMerchantId || null,
+                    chain: body.chain || null,
+                    feeAmount: body.feeAmount ? parseFloat(body.feeAmount) : null,
+                    assetUniqueId: body.assetUniqueId || null,
+                    reference: body.reference || null,
                     refundReason: body.refundReason || null,
+                    address: body.address || null, // ⭐ NEW
                 },
             });
             break;

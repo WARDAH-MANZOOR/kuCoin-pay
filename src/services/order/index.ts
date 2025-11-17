@@ -155,16 +155,24 @@ export const createOrder = async (payload: any) => {
     subMerchantId,
     timestamp,
   };
+  console.log("🧩 Step 1: Params prepared =>", params);
+
 
   // 🔹 Step 2: Build signature string
   const signString = buildSignatureString(params);
+  console.log("🧾 Step 2: Signature string =>", signString);
+
 
   // 🔹 Step 3: Load private key
   const privateKeyPath = path.resolve("src/keys/merchant_private.pem");
   const privateKey = fs.readFileSync(privateKeyPath, "utf8");
+  console.log("🔑 Step 3: Private key loaded from =>", privateKeyPath);
+
 
   // 🔹 Step 4: Generate signature
   const signature = sign(signString, privateKey);
+  console.log("🧠 Step 4: Signature (first 60 chars) =>", signature.slice(0, 60) + "...");
+
 
   // 🔹 Step 5: Headers
   const headers = {
@@ -174,6 +182,8 @@ export const createOrder = async (payload: any) => {
     "PAY-API-TIMESTAMP": timestamp.toString(),
     "Content-Type": "application/json",
   };
+    console.log("📦 Step 5: Headers =>", headers);
+
 
   // 🔹 Step 6: Body for KuCoin API
   const body = {
@@ -189,11 +199,14 @@ export const createOrder = async (payload: any) => {
     subMerchantId,
     payRegion,
   };
+  console.log("🧰 Step 6: Body =>", JSON.stringify(body, null, 2));
 
   const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/order/create`;
-
+  console.log("🚀 Step 7: Sending request to KuCoin...");
+  console.log("➡️ Endpoint:", endpoint);
   // 🔹 Step 7: Send request
   const response = await axios.post(endpoint, body, { headers });
+  console.log("✅ Step 8: KuCoin API response =>", response.data);
 
   const data = response.data.data;
 

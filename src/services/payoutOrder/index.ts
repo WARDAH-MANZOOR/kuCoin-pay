@@ -210,7 +210,7 @@ export const createPayoutOrder = async (payload: {
     totalAmount,
     totalCount,
   };
-
+  console.log("🔑 Signature Params:", params)
   const signString = Object.entries(params)
     .filter(([_, v]) => v !== "" && v !== undefined)
     .map(([k, v]) => `${k}=${v}`)
@@ -236,7 +236,7 @@ export const createPayoutOrder = async (payload: {
     "PAY-API-TIMESTAMP": timestamp.toString(),
     "Content-Type": "application/json",
   };
-
+  console.log("📦 Headers:", headers);
   // --------------------------
   // REQUEST BODY
   // --------------------------
@@ -258,6 +258,7 @@ export const createPayoutOrder = async (payload: {
   // API CALL
   // --------------------------
   const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/withdraw/batch/create`;
+  console.log("🚀 POST =>", endpoint);
 
   const response = await axios.post(endpoint, body, { headers });
 
