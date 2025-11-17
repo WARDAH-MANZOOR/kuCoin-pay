@@ -93,24 +93,80 @@ async function handleKucoinWebhookEvent(body) {
         /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           4.3 PAYOUT WEBHOOK
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
-        case "PAYOUT":
+        // case "PAYOUT":
+        //   const payout = await prisma.payout.upsert({
+        //     where: { requestId: body.requestId },
+        //     update: {
+        //       batchNo: body.batchNo,
+        //       payoutType: body.payoutType,
+        //       totalAmount: parseFloat(body.totalAmount),
+        //       totalCount: body.totalCount,
+        //       status: body.status,
+        //     },
+        //     create: {
+        //       requestId: body.requestId,
+        //       batchNo: body.batchNo,
+        //       batchName: body.batchName,
+        //       currency: body.currency,
+        //       payoutType: body.payoutType,
+        //       totalAmount: parseFloat(body.totalAmount),
+        //       totalCount: body.totalCount,
+        //       status: body.status,
+        //     },
+        //   });
+        //   if (Array.isArray(body.withdrawDetailDtoList)) {
+        //     for (const d of body.withdrawDetailDtoList) {
+        //       await prisma.payoutDetail.upsert({
+        //         where: { detailId: d.detailId },
+        //         update: {
+        //           receiverUID: d.receiverUID || null,
+        //           receiverAddress: d.receiverAddress || null,
+        //           amount: parseFloat(d.amount),
+        //           remark: d.remark || null,
+        //           status: d.status,
+        //         },
+        //         create: {
+        //           detailId: d.detailId,
+        //           payoutId: payout.id,
+        //           receiverUID: d.receiverUID || null,
+        //           receiverAddress: d.receiverAddress || null,
+        //           amount: parseFloat(d.amount),
+        //           remark: d.remark || null,
+        //           status: d.status,
+        //         },
+        //       });
+        //     }
+        //   }
+        //   break;
+        case "PAYOUT": {
+            console.log("🔔 PAYOUT WEBHOOK RECEIVED:", body);
             const payout = await prisma.payout.upsert({
                 where: { requestId: body.requestId },
                 update: {
                     batchNo: body.batchNo,
+                    batchName: body.batchName,
                     payoutType: body.payoutType,
+                    currency: body.currency,
+                    chain: body.chain || null,
                     totalAmount: parseFloat(body.totalAmount),
                     totalCount: body.totalCount,
+                    totalPaidAmount: body.totalPaidAmount ? parseFloat(body.totalPaidAmount) : null,
+                    processingFee: body.processingFee ? parseFloat(body.processingFee) : null,
+                    totalPayoutFee: body.totalPayoutFee ? parseFloat(body.totalPayoutFee) : null,
                     status: body.status,
                 },
                 create: {
                     requestId: body.requestId,
                     batchNo: body.batchNo,
                     batchName: body.batchName,
-                    currency: body.currency,
                     payoutType: body.payoutType,
+                    currency: body.currency,
+                    chain: body.chain || null,
                     totalAmount: parseFloat(body.totalAmount),
                     totalCount: body.totalCount,
+                    totalPaidAmount: body.totalPaidAmount ? parseFloat(body.totalPaidAmount) : null,
+                    processingFee: body.processingFee ? parseFloat(body.processingFee) : null,
+                    totalPayoutFee: body.totalPayoutFee ? parseFloat(body.totalPayoutFee) : null,
                     status: body.status,
                 },
             });
@@ -124,20 +180,25 @@ async function handleKucoinWebhookEvent(body) {
                             amount: parseFloat(d.amount),
                             remark: d.remark || null,
                             status: d.status,
+                            payoutFee: d.payoutFee ? parseFloat(d.payoutFee) : null,
+                            payoutId: payout.id,
                         },
                         create: {
                             detailId: d.detailId,
-                            payoutId: payout.id,
                             receiverUID: d.receiverUID || null,
                             receiverAddress: d.receiverAddress || null,
                             amount: parseFloat(d.amount),
                             remark: d.remark || null,
                             status: d.status,
+                            payoutFee: d.payoutFee ? parseFloat(d.payoutFee) : null,
+                            payoutId: payout.id,
                         },
                     });
                 }
             }
+            console.log("💾 Payout webhook saved!");
             break;
+        }
         /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           4.4 ONCHAIN PAYMENT WEBHOOK
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/

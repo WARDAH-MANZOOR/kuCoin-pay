@@ -112,7 +112,7 @@ model Payout {
 
   bizScene        String?                             // CRYPTO_REWARDS / SETTLEMENT / REIMBURSEMENT / etc.
 
-  batchNo         String?                             // KuCoin batchNo
+  batchNo         String?                             // KuCoin batchNo (KuCoin Pay unique payout order ID )
   batchName       String                              // Merchant provided
   payoutType      String                              // onChain / offChain
   currency        String                              // USDT, BTC

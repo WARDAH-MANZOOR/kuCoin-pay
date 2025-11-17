@@ -33,7 +33,7 @@ if (!API_KEY) {
 // SELECT WEBHOOK TYPE TO TEST:
 // ORDER / REFUND / PAYOUT / ONCHAIN_PAYMENT / ONCHAIN_REFUND
 // ------------------------------
-const WEBHOOK_TYPE: "ORDER" | "REFUND" | "PAYOUT" | "ONCHAIN_PAYMENT" | "ONCHAIN_REFUND" = "REFUND";
+const WEBHOOK_TYPE: "ORDER" | "REFUND" | "PAYOUT" | "ONCHAIN_PAYMENT" | "ONCHAIN_REFUND" = "PAYOUT";
 
 
 // ------------------------------
@@ -75,37 +75,114 @@ const SAMPLE = {
   //   subMerchantId: "sub001",
   //   payTime: 1740125635482,
   // },
-
   REFUND: {
     orderType: "REFUND",
-    merchantId: "6724a68720b1d20001255662",
-    subMerchantId: "sub001",
-    requestId: "req_12345",
-    refundId: "kpr_202412030703",
-    payID: "kpt_202411290941",
-    refundAmount: "1.55",
-    remainingRefundAmount: "8.45",
-    status: "SUCCEEDED",
-    refundFinishTime: 1749819910000,
-    refundCurrency: "USDT",
-    remainingRefundCurrency: "USDT",
-    refundReason: "test",
+
+    merchantId: "6724a68720b1d20001255662",     // REQUIRED
+    subMerchantId: "sub001",                    // OPTIONAL
+
+    requestId: "req_12345",                     // Merchant refundRequestId
+    refundId: "kpr_202412030703",               // KuCoin refundId
+    payID: "kpt_202411290941",                  // KuCoin original payment ID
+
+    refundAmount: "1.55",                       // string
+    remainingRefundAmount: "8.45",              // string (may be null)
+
+    status: "SUCCEEDED",                        // refund status
+    refundFinishTime: 1749819910000,            // timestamp (number)
+
+    refundCurrency: "USDT",                     // currency
+    remainingRefundCurrency: "USDT",            // currency
+
+    reference: "test-reference",                // OPTIONAL
+    refundReason: "test",                       // OPTIONAL
+
+    // Whitelisted merchant only
+    payerUserId: "7306C912B109D5EAE5B0BEAE860D23EA",
+    retrieveKycStatus: true,
+    payerDetail: "24auuCk/Xk/ZGXxwOVqdPIm8N0zVGDXB+6Jtu...", // encrypted identity
   },
 
-  PAYOUT: {
-    orderType: "PAYOUT",
-    batchNo: "kpbw_202506250809",
-    batchName: "Payroll Batch",
-    currency: "USDT",
-    payoutType: "offChain",
-    processingFee: "0",
-    requestId: "927c7a7b-91ee-49fd",
-    status: "SUCCEEDED_PART",
-    totalAmount: "500",
-    totalCount: 3,
-    totalPaidAmount: "250",
-    totalPayoutFee: "0",
-  },
+  // REFUND: {
+  //   orderType: "REFUND",
+  //   merchantId: "6724a68720b1d20001255662",
+  //   subMerchantId: "sub001",
+  //   requestId: "req_12345",
+  //   refundId: "kpr_202412030703",
+  //   payID: "kpt_202411290941",
+  //   refundAmount: "1.55",
+  //   remainingRefundAmount: "8.45",
+  //   status: "SUCCEEDED",
+  //   refundFinishTime: 1749819910000,
+  //   refundCurrency: "USDT",
+  //   remainingRefundCurrency: "USDT",
+  //   refundReason: "test",
+  // },
+
+  // PAYOUT: {
+  //   orderType: "PAYOUT",
+  //   batchNo: "kpbw_202506250809",
+  //   batchName: "Payroll Batch",
+  //   currency: "USDT",
+  //   payoutType: "offChain",
+  //   processingFee: "0",
+  //   requestId: "927c7a7b-91ee-49fd",
+  //   status: "SUCCEEDED_PART",
+  //   totalAmount: "500",
+  //   totalCount: 3,
+  //   totalPaidAmount: "250",
+  //   totalPayoutFee: "0",
+  // },
+    PAYOUT: {
+      orderType: "PAYOUT",
+
+      batchNo: "kpbw_2025062508091949000931340045",
+      batchName: "Payroll Batch",
+      requestId: "927c7a7b-91ee-49fd",
+
+      status: "SUCCEEDED_PART",       // or SUCCEEDED_FULL
+
+      payoutType: "offChain",          // offChain OR onChain
+      chain: null,                     // required only for onChain (ex: "eth")
+
+      currency: "USDT",
+      totalAmount: "500",
+      totalCount: 3,
+
+      totalPaidAmount: "250",
+      processingFee: "0",
+      totalPayoutFee: "0",
+
+  withdrawDetailDtoList: [
+    {
+      detailId: "detailID001",
+      receiverUID: "96908312131",        // offChain → UID returned
+      receiverAddress: null,             // onChain → address returned
+      amount: "300",
+      remark: "salary-1",
+      status: "SUCCEEDED",               // SUCCEEDED / FAILED / PROCESSING
+      payoutFee: "0.15"
+    },
+    {
+      detailId: "detailID002",
+      receiverUID: "96908312132",
+      receiverAddress: null,
+      amount: "150",
+      remark: "salary-2",
+      status: "FAILED",
+      payoutFee: null
+    },
+    {
+      detailId: "detailID003",
+      receiverUID: "96908312133",
+      receiverAddress: null,
+      amount: "50",
+      remark: "salary-3",
+      status: "PROCESSING",
+      payoutFee: null
+    }
+  ]
+},
 
   ONCHAIN_PAYMENT: {
     orderType: "ONCHAIN_PAYMENT",
