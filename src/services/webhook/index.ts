@@ -7,7 +7,6 @@ import { sign } from "../../utils/signature.js";
 import { decryptAES } from "../../utils/aesDecrypt.js";
 const prisma = new PrismaClient();
 const AES_KEY = process.env.AES_SECRET_KEY;
-let decryptedPayerDetail: string | null = null;
 
 async function handleKucoinWebhookEvent(body: any) {
   let decryptedPayerDetail: string | null = null;

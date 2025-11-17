@@ -33,7 +33,7 @@ if (!API_KEY) {
 // SELECT WEBHOOK TYPE TO TEST:
 // ORDER / REFUND / PAYOUT / ONCHAIN_PAYMENT / ONCHAIN_REFUND
 // ------------------------------ONCHAIN_PAYMENT
-const WEBHOOK_TYPE: "ORDER" | "REFUND" | "PAYOUT" | "ONCHAIN_PAYMENT" | "ONCHAIN_REFUND" = "ONCHAIN_PAYMENT";
+const WEBHOOK_TYPE: "ORDER" | "REFUND" | "PAYOUT" | "ONCHAIN_PAYMENT" | "ONCHAIN_REFUND" = "ORDER";
 
 
 // ------------------------------
@@ -58,7 +58,7 @@ const SAMPLE = {
     "errorReason": null,
     "payerUserId": null,
     "retrieveKycStatus": null,
-    "payerDetail": null
+    "payerDetail": "hcPEyGyQwRy/8rie9MLFCdRs+7n7MndwbwhGcWFCfp5et4+cfvB5yLLckyeeozSTWmvcDY7C4bvU54MZlJWSxQpFEKJlZf8XLIs3EIcfik3muPLvk5PaiDIMT/ZEe8O3"
   },
 
 

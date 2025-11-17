@@ -1,6 +1,23 @@
 import { PrismaClient } from "@prisma/client";
+import { decryptAES } from "../../utils/aesDecrypt.js";
 const prisma = new PrismaClient();
+const AES_KEY = process.env.AES_SECRET_KEY;
 async function handleKucoinWebhookEvent(body) {
+    let decryptedPayerDetail = null;
+    if (body.payerDetail && AES_KEY) {
+        try {
+            decryptedPayerDetail = decryptAES(body.payerDetail, AES_KEY);
+            console.log("🔓 Decrypted payerDetail:", decryptedPayerDetail);
+        }
+        catch (err) {
+            if (err instanceof Error) {
+                console.error("❌ AES decrypt failed:", err.message);
+            }
+            else {
+                console.error("❌ AES decrypt failed:", String(err));
+            }
+        }
+    }
     switch (body.orderType) {
         /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           4.1 TRADE WEBHOOK
@@ -32,7 +49,8 @@ async function handleKucoinWebhookEvent(body) {
                     errorReason: body.errorReason || null,
                     payerUserId: body.payerUserId || null,
                     retrieveKycStatus: body.retrieveKycStatus ?? null,
-                    payerDetail: body.payerDetail || null,
+                    // payerDetail: body.payerDetail || null,
+                    payerDetail: decryptedPayerDetail || null,
                 },
             });
             break;
@@ -84,7 +102,8 @@ async function handleKucoinWebhookEvent(body) {
                     retrieveKycStatus: body.retrieveKycStatus !== undefined
                         ? body.retrieveKycStatus
                         : undefined,
-                    payerDetail: body.payerDetail || null,
+                    // payerDetail: body.payerDetail || null,
+                    payerDetail: decryptedPayerDetail || null,
                 },
             });
             console.log("💾 Refund webhook saved to DB.");

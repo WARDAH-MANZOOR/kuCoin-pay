@@ -16,6 +16,6 @@ console.log("Original:", text);
 const encrypted = encryptAES(text, key);
 console.log("Encrypted:", encrypted);
 
-// decrypt
-const decrypted = decryptAES(encrypted, key);
-console.log("Decrypted:", decrypted);
+// // decrypt
+// const decrypted = decryptAES(encrypted, key);
+// console.log("Decrypted:", decrypted);
