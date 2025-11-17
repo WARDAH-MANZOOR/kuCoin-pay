@@ -51,23 +51,22 @@ model Order {
   refunds            Refund[]
 }
 
-
 model Refund {
   id                       String   @id @default(uuid())
 
   // MERCHANT SIDE → Create Refund API
-  refundRequestId         String   @unique       // merchant requestId
-  payID                   String                // KuCoin original order ID
+  refundRequestId         String   @unique      
+  payID                   String                
   refundAmount            Float
   refundReason            String?
   subMerchantId           String?
   reference               String?
 
   // KUCOIN → refundId
-  kucoinRefundId          String?  @unique      // refundId
+  kucoinRefundId          String?  @unique      
 
   // KUCOIN SHARED FIELDS (webhook + query)
-  merchantId              String?              // 🔥 NEW FIELD (KuCoin assigned)
+  merchantId              String?              
   status                  String   @default("PENDING")
   refundCurrency          String?
   remainingRefundAmount   Float?
@@ -83,14 +82,12 @@ model Refund {
   assetUniqueId           String?
   chain                   String?
   feeAmount               Float?
-
+  address                 String?     
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
-  // RELATION TO ORDER
   order                   Order?   @relation(fields: [payID], references: [kucoinOrderId])
 }
-
 
 
 model Report {

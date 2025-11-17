@@ -202,20 +202,52 @@ async function handleKucoinWebhookEvent(body) {
         /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           4.4 ONCHAIN PAYMENT WEBHOOK
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
-        case "ONCHAIN_PAYMENT":
+        // case "ONCHAIN_PAYMENT":
+        //   await prisma.onchainOrder.updateMany({
+        //     where: { requestId: body.requestId },
+        //     data: {
+        //       subMerchantId: body.subMerchantId || null,
+        //       status: body.status,
+        //       chain: body.chain,
+        //       cryptoCurrency: body.currency,
+        //       cryptoAmount: parseFloat(body.paymentAmount),
+        //       reference: body.reference || null,
+        //       kucoinOrderId: body.payOrderId,
+        //     },
+        //   });
+        //   break;
+        case "ONCHAIN_PAYMENT": {
+            console.log("🔔 ONCHAIN PAYMENT WEBHOOK RECEIVED:", body);
             await prisma.onchainOrder.updateMany({
                 where: { requestId: body.requestId },
                 data: {
+                    // IDENTIFIERS
+                    orderType: body.orderType, // always ONCHAIN_PAYMENT
                     subMerchantId: body.subMerchantId || null,
-                    status: body.status,
-                    chain: body.chain,
-                    cryptoCurrency: body.currency,
-                    cryptoAmount: parseFloat(body.paymentAmount),
-                    reference: body.reference || null,
                     kucoinOrderId: body.payOrderId,
+                    // STATUS
+                    status: body.status, // CREATED / USER_PAY_COMPLETED / etc.
+                    paymentOrderType: body.paymentOrderType, // ACTIVE / PASSIVE
+                    paymentStatus: body.paymentStatus, // FULL_PAYMENT / PART_PAYMENT etc.
+                    // PAYMENT DETAILS
+                    chain: body.chain, // chain of transaction (eth / btc)
+                    cryptoCurrency: body.currency, // crypto currency (USDT etc)
+                    cryptoAmount: body.paymentAmount !== undefined
+                        ? parseFloat(body.paymentAmount)
+                        : undefined, // actual payment amount
+                    paymentCurrency: body.paymentCurrency || null,
+                    paymentAmount: body.paymentAmount !== undefined
+                        ? parseFloat(body.paymentAmount)
+                        : undefined,
+                    paymentChain: body.chain || null, // same as chain
+                    assetUniqueId: body.assetUniqueId || null, // tx hash
+                    // OPTIONAL
+                    reference: body.reference || null,
                 },
             });
+            console.log("💾 Onchain payment webhook saved.");
             break;
+        }
         /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           4.5 ONCHAIN REFUND WEBHOOK
           (mapped to Refund table)
