@@ -6,8 +6,9 @@ const key = "9M8LJx4Txj0iF3g8y2Sxudjv84p0bN74RFnqxB1gD4U="
 const text = JSON.stringify({
   firstName: "Wardah",
   lastName: "Manzoor",
-  country: "PK",
-  test: true
+  countryCode: "PK",
+  dateOfBirth:"1994-02-04",
+  expiryDate:"2099-1231",
 });
 
 console.log("Original:", text);
@@ -16,6 +17,6 @@ console.log("Original:", text);
 const encrypted = encryptAES(text, key);
 console.log("Encrypted:", encrypted);
 
-// // decrypt
-// const decrypted = decryptAES(encrypted, key);
-// console.log("Decrypted:", decrypted);
+// decrypt
+const decrypted = decryptAES(encrypted, key);
+console.log("Decrypted:", decrypted);
