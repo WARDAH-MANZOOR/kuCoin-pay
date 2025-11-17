@@ -4,10 +4,26 @@ import path from "path";
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { sign } from "../../utils/signature.js";
-
+import { decryptAES } from "../../utils/aesDecrypt.js";
 const prisma = new PrismaClient();
+const AES_KEY = process.env.AES_SECRET_KEY;
+let decryptedPayerDetail: string | null = null;
 
 async function handleKucoinWebhookEvent(body: any) {
+  let decryptedPayerDetail: string | null = null;
+
+  if (body.payerDetail && AES_KEY) {
+    try {
+      decryptedPayerDetail = decryptAES(body.payerDetail, AES_KEY);
+      console.log("🔓 Decrypted payerDetail:", decryptedPayerDetail);
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error("❌ AES decrypt failed:", err.message);
+      } else {
+        console.error("❌ AES decrypt failed:", String(err));
+      }
+    }
+  }
   switch (body.orderType) {
 
     /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -40,7 +56,9 @@ async function handleKucoinWebhookEvent(body: any) {
           errorReason: body.errorReason || null,
           payerUserId: body.payerUserId || null,
           retrieveKycStatus: body.retrieveKycStatus ?? null,
-          payerDetail: body.payerDetail || null,
+          // payerDetail: body.payerDetail || null,
+          payerDetail: decryptedPayerDetail || null,
+
         },
       });
       break;
@@ -105,7 +123,9 @@ async function handleKucoinWebhookEvent(body: any) {
             body.retrieveKycStatus !== undefined
               ? body.retrieveKycStatus
               : undefined,
-          payerDetail: body.payerDetail || null,
+          // payerDetail: body.payerDetail || null,
+          payerDetail: decryptedPayerDetail || null,
+
         },
       });
 
