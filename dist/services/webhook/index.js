@@ -39,16 +39,57 @@ async function handleKucoinWebhookEvent(body) {
         /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           4.2 REFUND WEBHOOK
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/
-        case "REFUND":
+        // case "REFUND":
+        //   await prisma.refund.updateMany({
+        //     where: { kucoinRefundId: body.refundId },
+        //     data: {
+        //       status: body.status,
+        //       refundAmount: parseFloat(body.refundAmount || "0"),
+        //       refundReason: body.refundReason || null,
+        //     },
+        //   });
+        //   break;
+        case "REFUND": {
+            console.log("🔔 REFUND WEBHOOK RECEIVED:", body);
             await prisma.refund.updateMany({
                 where: { kucoinRefundId: body.refundId },
                 data: {
-                    status: body.status,
-                    refundAmount: parseFloat(body.refundAmount || "0"),
+                    // KUCOIN → refundId
+                    kucoinRefundId: body.refundId,
+                    // MERCHANT + KUCOIN FIELDS
+                    merchantId: body.merchantId || null,
+                    subMerchantId: body.subMerchantId || null,
+                    refundRequestId: body.requestId,
+                    payID: body.payID,
+                    // FLOAT FIELDS (IMPORTANT: undefined instead of null)
+                    refundAmount: body.refundAmount !== undefined
+                        ? parseFloat(body.refundAmount)
+                        : undefined,
                     refundReason: body.refundReason || null,
+                    reference: body.reference || null,
+                    // REFUND STATUS
+                    status: body.status || "SUCCEEDED",
+                    // CURRENCY + AMOUNTS
+                    refundCurrency: body.refundCurrency || null,
+                    remainingRefundAmount: body.remainingRefundAmount !== undefined
+                        ? parseFloat(body.remainingRefundAmount)
+                        : undefined,
+                    remainingRefundCurrency: body.remainingRefundCurrency || null,
+                    // TIMESTAMPS
+                    refundFinishTime: body.refundFinishTime
+                        ? BigInt(body.refundFinishTime)
+                        : undefined,
+                    // ADVANCED OPTIONAL FIELDS
+                    payerUserId: body.payerUserId || null,
+                    retrieveKycStatus: body.retrieveKycStatus !== undefined
+                        ? body.retrieveKycStatus
+                        : undefined,
+                    payerDetail: body.payerDetail || null,
                 },
             });
+            console.log("💾 Refund webhook saved to DB.");
             break;
+        }
         /*━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           4.3 PAYOUT WEBHOOK
         ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━*/

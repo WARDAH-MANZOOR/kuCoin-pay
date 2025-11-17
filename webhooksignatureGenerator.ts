@@ -33,7 +33,7 @@ if (!API_KEY) {
 // SELECT WEBHOOK TYPE TO TEST:
 // ORDER / REFUND / PAYOUT / ONCHAIN_PAYMENT / ONCHAIN_REFUND
 // ------------------------------
-const WEBHOOK_TYPE: "ORDER" | "REFUND" | "PAYOUT" | "ONCHAIN_PAYMENT" | "ONCHAIN_REFUND" = "ORDER";
+const WEBHOOK_TYPE: "ORDER" | "REFUND" | "PAYOUT" | "ONCHAIN_PAYMENT" | "ONCHAIN_REFUND" = "REFUND";
 
 
 // ------------------------------

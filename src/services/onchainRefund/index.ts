@@ -14,18 +14,18 @@ const prisma = new PrismaClient();
 export const createOnchainRefundOrder = async (payload: {
   requestId: string;
   subMerchantId?: string;
-  payOrderId: string;
+  payID: string;
   refundAmount: number;
   chain: string;
   address: string;
   refundReason?: string;
   reference?: string;
 }) => {
-  const { requestId, subMerchantId, payOrderId, refundAmount, chain, address, refundReason, reference } = payload;
+  const { requestId, subMerchantId, payID, refundAmount, chain, address, refundReason, reference } = payload;
   const apiKey = process.env.KUCOIN_API_KEY!;
   const timestamp = Date.now();
 
-  if (!requestId || !payOrderId || !refundAmount || !chain || !address) {
+  if (!requestId || !payID || !refundAmount || !chain || !address) {
     throw new Error("Missing required parameters: requestId, payOrderId, refundAmount, chain, address");
   }
 
@@ -34,7 +34,7 @@ export const createOnchainRefundOrder = async (payload: {
     `address=${address}`,
     `apiKey=${apiKey}`,
     `chain=${chain}`,
-    `payOrderId=${payOrderId}`,
+    `payOrderId=${payID}`,
     `refundAmount=${refundAmount}`,
     `requestId=${requestId}`,
   ];
@@ -56,7 +56,7 @@ export const createOnchainRefundOrder = async (payload: {
   };
   console.log("🛡️ Headers =>", headers);
 
-  const body = { requestId, subMerchantId, payOrderId, refundAmount, chain, address, refundReason, reference };
+  const body = { requestId, subMerchantId, payID, refundAmount, chain, address, refundReason, reference };
   console.log("📦 Body =>", body);
 
   const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/refund/create`;
@@ -70,13 +70,15 @@ export const createOnchainRefundOrder = async (payload: {
   await prisma.refund.create({
     data: {
       refundRequestId: requestId,
-      payOrderId,
+      payID,
       refundAmount,
       refundReason: refundReason || null,
       kucoinRefundId: data?.refundId || null,
       status: resp.data?.success ? "SUCCESS" : "FAILED",
     },
   });
+
+
 
   return resp.data;
 };

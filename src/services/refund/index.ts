@@ -75,29 +75,28 @@ export const refundOrder = async (payload: {
   console.log("➡️ Endpoint:", endpoint);
 
   const response = await axios.post(endpoint, body, { headers });
-  console.log("✅ Step 8: KuCoin API response =>", response.data);
 
-  // 🔹 Step 9: Save refund record
+  console.log("✅ Refund API Response:", response.data);
+
+  const data = response.data?.data;
+
+  /*──────────────────────────────────────────────
+   🔹 Step 7: Save Refund in DB
+  ───────────────────────────────────────────────*/
   await prisma.refund.create({
     data: {
       refundRequestId: requestId,
-      payOrderId: payID,
-      refundAmount: parseFloat(String(refundAmount)),
-      refundReason: refundReason || "N/A",
-      status: response.data?.success ? "SUCCESS" : "PENDING",
-      kucoinRefundId: response.data?.data?.refundId || null,
+      payID,
+      refundAmount,
+      refundReason: refundReason || null,
+      subMerchantId: subMerchantId || null,
+      reference: reference || null,
+
+      // RESPONSE FIELDS
+      kucoinRefundId: data?.refundId || null,
+      status: "PENDING", // real status webhook se aayega
     },
   });
-  console.log("💾 Step 9: Refund saved in DB.");
-
-  // 🔹 Step 10: Update order status
-  if (response.data?.success) {
-    await prisma.order.updateMany({
-      where: { kucoinOrderId: payID },
-      data: { status: "REFUNDED" },
-    });
-    console.log("💾 Step 10: Order marked REFUNDED.");
-  }
 
   return response.data;
 };
@@ -174,26 +173,6 @@ export const queryRefund = async (payload: {
   // 🔹 Step 9 – Upsert refund record in DB
   if (response.data?.data) {
     const r = response.data.data;
-
-    await prisma.refund.upsert({
-      where: { refundRequestId: r.requestId },
-      update: {
-        status: r.status || "UNKNOWN",
-        kucoinRefundId: r.refundId || null,
-        refundAmount: parseFloat(r.refundAmount || "0"),
-        refundReason: r.refundReason || null,
-      },
-      create: {
-        refundRequestId: r.requestId,
-        payOrderId: r.payID || "",
-        refundAmount: parseFloat(r.refundAmount || "0"),
-        refundReason: r.refundReason || "N/A",
-        kucoinRefundId: r.refundId || null,
-        status: r.status || "PENDING",
-      },
-    });
-
-    console.log("💾 Step 9: Refund record synced to DB.");
   } else {
     console.log("ℹ️ No refund data returned from API.");
   }
@@ -275,30 +254,9 @@ export const queryRefundList = async (payload: {
   const response = await axios.post(endpoint, body, { headers });
   console.log("✅ Step 8: KuCoin API response =>", response.data);
 
-  // 🔹 Step 9 – Sync refunds to DB
-  const refunds = response.data?.data?.items || [];
-  if (refunds.length > 0) {
-    console.log(`💾 Step 9: Syncing ${refunds.length} refunds to DB...`);
-    for (const refund of refunds) {
-      await prisma.refund.upsert({
-        where: { refundRequestId: refund.requestId },
-        update: {
-          status: refund.status || "UNKNOWN",
-          kucoinRefundId: refund.refundId || null,
-          refundAmount: parseFloat(refund.refundAmount || "0"),
-          refundReason: refund.refundReason || null,
-        },
-        create: {
-          refundRequestId: refund.requestId,
-          payOrderId: refund.payID || "",
-          refundAmount: parseFloat(refund.refundAmount || "0"),
-          refundReason: refund.refundReason || "N/A",
-          kucoinRefundId: refund.refundId || null,
-          status: refund.status || "PENDING",
-        },
-      });
-    }
-    console.log("✅ Step 10: Refund list synced successfully.");
+  if (response.data?.data) {
+    const refunds = response.data.data;
+    // Process refunds as needed
   } else {
     console.log("ℹ️ No refunds found for this time range.");
   }
