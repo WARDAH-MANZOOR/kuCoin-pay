@@ -152,26 +152,42 @@ model PayoutDetail {
 
 
 model OnchainOrder {
-  id              String   @id @default(uuid())
-  requestId       String   @unique
-  subMerchantId   String?                    // ✅ Added field
-  fiatCurrency    String
-  fiatAmount      Float
-  cryptoCurrency  String
-  cryptoAmount    Float
-  chain           String
-  reference       String?                    // ✅ Added field
-  kucoinOrderId   String?  @unique
-  walletAddress   String?
-  precision       Int?
-  expireTime      Int?
+  id                  String   @id @default(uuid())
 
-  assetUniqueId       String?
-  paymentOrderType    String?
-  paymentStatus       String?
-  paymentCurrency     String?
+  // MERCHANT FIELDS (Create API)
+  requestId           String   @unique
+  subMerchantId       String?
+  fiatCurrency        String?
+  fiatAmount          Float?
+  cryptoCurrency      String
+  cryptoAmount        Float?
+  chain               String
+  reference           String?
+  goods               Json?
 
-  status          String   @default("PENDING")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  // KUCOIN RESPONSE FIELDS (Create API)
+  kucoinOrderId       String?   @unique
+  walletAddress       String?
+  precision           Int?
+  expireTime          BigInt?   // number in ms
+
+  // WEBHOOK FIELDS (Onchain Payment Notification)
+  orderType           String?   // ALWAYS "ONCHAIN_PAYMENT"
+  paymentOrderType    String?   // ACTIVE / PASSIVE
+  paymentStatus       String?   // PART_PAYMENT / FULL_PAYMENT / OVER_PAYMENT / WRONG_PAYMENT
+
+  assetUniqueId       String?   // Transaction hash
+  paymentCurrency     String?   // actual payment currency
+  paymentAmount       Float?    // actual payment amount
+  paymentChain        String?   // actual chain used (btc, eth)
+
+  status              String?   // status from webhook (CREATED, USER_PAY_COMPLETED, etc.)
+
+  // REFUND RELATED (Query API)
+  remainingRefundCurrency String?
+  remainingRefundAmount   Float?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
+
