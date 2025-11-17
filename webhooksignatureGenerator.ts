@@ -40,18 +40,41 @@ const WEBHOOK_TYPE: "ORDER" | "REFUND" | "PAYOUT" | "ONCHAIN_PAYMENT" | "ONCHAIN
 // EXAMPLES (you may replace these)
 // ------------------------------
 const SAMPLE = {
-  ORDER: {
-    orderType: "TRADE",
-    requestId: "1763124196024",
-    payOrderId: "kpt_2025dummy123456",
-    orderAmount: "20",
-    orderCurrency: "USDT",
-    reference: "my-reference",
-    refundCurrency: "USDT",
-    status: "USER_PAY_COMPLETED",
-    subMerchantId: "sub001",
-    payTime: 1740125635482,
+    ORDER: {
+    "orderType": "TRADE",
+    "requestId": "1763124196024",
+    "payOrderId": "kpt_2025dummy123456",
+    "status": "USER_PAY_COMPLETED",
+    "orderCurrency": "USDT",
+    "orderAmount": "20",
+    "goods": [
+      { "goodsId": "001", "goodsName": "Gift Card", "goodsDesc": "Digital" }
+    ],
+    "reference": "reference",
+    "subMerchantId": "sub001",
+    "payTime": 1740125635482,
+    "canRefundAmount": "20",
+    "refundCurrency": "USDT",
+    "errorReason": null,
+    "payerUserId": null,
+    "retrieveKycStatus": null,
+    "payerDetail": null
   },
+
+
+  
+  // ORDER: {
+  //   orderType: "TRADE",
+  //   requestId: "1763124196024",
+  //   payOrderId: "kpt_2025dummy123456",
+  //   orderAmount: "20",
+  //   orderCurrency: "USDT",
+  //   reference: "my-reference",
+  //   refundCurrency: "USDT",
+  //   status: "USER_PAY_COMPLETED",
+  //   subMerchantId: "sub001",
+  //   payTime: 1740125635482,
+  // },
 
   REFUND: {
     orderType: "REFUND",

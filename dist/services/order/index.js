@@ -8,36 +8,127 @@ const prisma = new PrismaClient();
  * Service: Create Order (KuCoin Chapter 3--3.1)
  * Handles API signing, sending to KuCoin, and saving in DB.
  */
+// export const createOrder = async (payload: any) => {
+//   const timestamp = Date.now();
+//   const {
+//     orderAmount,
+//     orderCurrency,
+//     reference,
+//     source,
+//     subMerchantId,
+//     expireTime,
+//     goods,
+//     returnUrl,
+//     cancelUrl,
+//   } = payload;
+//   // 🔹 Validate required fields
+//   if (!orderAmount || !orderCurrency || !goods || !returnUrl || !cancelUrl) {
+//     throw new Error(
+//       "Missing required fields: orderAmount, orderCurrency, goods, returnUrl, cancelUrl are mandatory."
+//     );
+//   }
+//   // 🔹 Step 1: Prepare params for signature
+//   const params = {
+//     apiKey: process.env.KUCOIN_API_KEY,
+//     expireTime: expireTime || 1800000,
+//     orderAmount,
+//     orderCurrency,
+//     reference: reference || "no-ref",
+//     requestId: "req-" + Date.now(),
+//     source: source || "WEB",
+//     subMerchantId: subMerchantId || "Default-SubMerchant",
+//     timestamp,
+//   };
+//   console.log("🧩 Step 1: Params prepared =>", params);
+//   // 🔹 Step 2: Build signature string
+//   const signString = buildSignatureString(params);
+//   console.log("🧾 Step 2: Signature string =>", signString);
+//   // 🔹 Step 3: Load private key
+//   const privateKeyPath = path.resolve("src/keys/merchant_private.pem");
+//   const privateKey = fs.readFileSync(privateKeyPath, "utf8");
+//   console.log("🔑 Step 3: Private key loaded from =>", privateKeyPath);
+//   // 🔹 Step 4: Generate signature
+//   const signature = sign(signString, privateKey);
+//   console.log(
+//     "🧠 Step 4: Generated signature (first 60 chars) =>",
+//     signature.slice(0, 60) + "..."
+//   );
+//   // 🔹 Step 5: Headers
+//   const headers = {
+//     "PAY-API-SIGN": signature,
+//     "PAY-API-KEY": process.env.KUCOIN_API_KEY,
+//     "PAY-API-VERSION": "1.0",
+//     "PAY-API-TIMESTAMP": timestamp.toString(),
+//     "Content-Type": "application/json",
+//   };
+//   console.log("📦 Step 5: Headers =>", headers);
+//   // 🔹 Step 6: Body
+//   const body = {
+//     expireTime: params.expireTime,
+//     goods,
+//     orderAmount,
+//     orderCurrency,
+//     reference: params.reference,
+//     requestId: params.requestId,
+//     returnUrl,
+//     cancelUrl,
+//     source: params.source,
+//     subMerchantId: params.subMerchantId,
+//   };
+//   console.log("🧰 Step 6: Body =>", JSON.stringify(body, null, 2));
+//   // 🔹 Step 7: Send request
+//   const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/order/create`;
+//   console.log("🚀 Step 7: Sending request to KuCoin API...");
+//   console.log("➡️ Endpoint:", endpoint);
+//   const response = await axios.post(endpoint, body, { headers });
+//   console.log("✅ Step 8: KuCoin API response =>", response.data);
+//   // 🔹 Step 9: Save in DB
+//   const order = await prisma.order.create({
+//     data: {
+//       requestId: params.requestId,
+//       orderAmount: parseFloat(orderAmount),
+//       orderCurrency,
+//       reference,
+//       source,
+//       subMerchantId,
+//       expireTime,
+//       kucoinOrderId: response.data.data?.payOrderId || null,
+//       qrcodeUrl: response.data.data?.qrcode || null,
+//       appPayUrl: response.data.data?.appPayUrl || null,
+//       status: "CREATED",
+//     },
+//   });
+//   console.log("💾 Step 9: Order saved =>", order);
+//   return response.data;
+// };
 export const createOrder = async (payload) => {
     const timestamp = Date.now();
-    const { orderAmount, orderCurrency, reference, source, subMerchantId, expireTime, goods, returnUrl, cancelUrl, } = payload;
+    const { orderAmount, orderCurrency, reference, source, subMerchantId, expireTime, goods, returnUrl, cancelUrl, payRegion, } = payload;
     // 🔹 Validate required fields
     if (!orderAmount || !orderCurrency || !goods || !returnUrl || !cancelUrl) {
         throw new Error("Missing required fields: orderAmount, orderCurrency, goods, returnUrl, cancelUrl are mandatory.");
     }
+    // 🔹 Create requestId
+    const requestId = "req-" + crypto.randomUUID();
     // 🔹 Step 1: Prepare params for signature
     const params = {
         apiKey: process.env.KUCOIN_API_KEY,
-        expireTime: expireTime || 1800000,
+        expireTime: expireTime || 3600000,
         orderAmount,
         orderCurrency,
-        reference: reference || "no-ref",
-        requestId: "req-" + Date.now(),
+        reference,
+        requestId,
         source: source || "WEB",
-        subMerchantId: subMerchantId || "Default-SubMerchant",
+        subMerchantId,
         timestamp,
     };
-    console.log("🧩 Step 1: Params prepared =>", params);
     // 🔹 Step 2: Build signature string
     const signString = buildSignatureString(params);
-    console.log("🧾 Step 2: Signature string =>", signString);
     // 🔹 Step 3: Load private key
     const privateKeyPath = path.resolve("src/keys/merchant_private.pem");
     const privateKey = fs.readFileSync(privateKeyPath, "utf8");
-    console.log("🔑 Step 3: Private key loaded from =>", privateKeyPath);
     // 🔹 Step 4: Generate signature
     const signature = sign(signString, privateKey);
-    console.log("🧠 Step 4: Generated signature (first 60 chars) =>", signature.slice(0, 60) + "...");
     // 🔹 Step 5: Headers
     const headers = {
         "PAY-API-SIGN": signature,
@@ -46,44 +137,45 @@ export const createOrder = async (payload) => {
         "PAY-API-TIMESTAMP": timestamp.toString(),
         "Content-Type": "application/json",
     };
-    console.log("📦 Step 5: Headers =>", headers);
-    // 🔹 Step 6: Body
+    // 🔹 Step 6: Body for KuCoin API
     const body = {
         expireTime: params.expireTime,
         goods,
         orderAmount,
         orderCurrency,
-        reference: params.reference,
-        requestId: params.requestId,
+        reference,
+        requestId,
         returnUrl,
         cancelUrl,
         source: params.source,
-        subMerchantId: params.subMerchantId,
+        subMerchantId,
+        payRegion,
     };
-    console.log("🧰 Step 6: Body =>", JSON.stringify(body, null, 2));
-    // 🔹 Step 7: Send request
     const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/order/create`;
-    console.log("🚀 Step 7: Sending request to KuCoin API...");
-    console.log("➡️ Endpoint:", endpoint);
+    // 🔹 Step 7: Send request
     const response = await axios.post(endpoint, body, { headers });
-    console.log("✅ Step 8: KuCoin API response =>", response.data);
-    // 🔹 Step 9: Save in DB
+    const data = response.data.data;
+    // 🔹 Step 8: Save in DB
     const order = await prisma.order.create({
         data: {
-            requestId: params.requestId,
+            requestId,
             orderAmount: parseFloat(orderAmount),
             orderCurrency,
+            goods,
             reference,
-            source,
+            source: params.source,
             subMerchantId,
             expireTime,
-            kucoinOrderId: response.data.data?.payOrderId || null,
-            qrcodeUrl: response.data.data?.qrcode || null,
-            appPayUrl: response.data.data?.appPayUrl || null,
+            returnUrl,
+            cancelUrl,
+            payRegion,
+            kucoinOrderId: data?.payOrderId || null,
+            qrcode: data?.qrcode || null,
+            qrcodeUrl: data?.qrcodeUrl || null,
+            appPayUrl: data?.appPayUrl || null,
             status: "CREATED",
         },
     });
-    console.log("💾 Step 9: Order saved =>", order);
     return response.data;
 };
 /**
@@ -143,19 +235,6 @@ export const queryOrder = async (payload) => {
     console.log("➡️ Endpoint:", endpoint);
     const response = await axios.post(endpoint, body, { headers });
     console.log("✅ Step 8: KuCoin API response =>", response.data);
-    // 🔹 Step 9: Update DB
-    if (response.data?.data?.payOrderId) {
-        await prisma.order.updateMany({
-            where: {
-                OR: [
-                    { kucoinOrderId: response.data.data.payOrderId },
-                    { requestId: response.data.data.requestId },
-                ],
-            },
-            data: { status: response.data.data.status || "UNKNOWN" },
-        });
-        console.log("💾 Step 9: Order status updated in DB");
-    }
     return response.data;
 };
 /**
@@ -211,37 +290,7 @@ export const queryOrderList = async (payload) => {
     console.log("➡️ Endpoint:", endpoint);
     const response = await axios.post(endpoint, body, { headers });
     console.log("✅ Step 8: KuCoin API response =>", response.data);
-    // 🔹 Step 9: Sync orders to DB
-    const orders = response.data?.data?.items || [];
-    if (orders.length > 0) {
-        console.log(`💾 Step 9: Syncing ${orders.length} orders to database...`);
-        for (const order of orders) {
-            await prisma.order.upsert({
-                where: { requestId: order.requestId },
-                update: {
-                    status: order.status || "UNKNOWN",
-                    kucoinOrderId: order.payOrderId || null,
-                    orderCurrency: order.orderCurrency || "USDT",
-                    orderAmount: parseFloat(order.orderAmount || "0"),
-                },
-                create: {
-                    requestId: order.requestId,
-                    orderAmount: parseFloat(order.orderAmount || "0"),
-                    orderCurrency: order.orderCurrency || "USDT",
-                    reference: order.reference || "",
-                    subMerchantId: order.subMerchantId || "",
-                    source: "WEB",
-                    expireTime: 1800000,
-                    kucoinOrderId: order.payOrderId || null,
-                    qrcodeUrl: "",
-                    appPayUrl: "",
-                    status: order.status || "UNKNOWN",
-                },
-            });
-        }
-        console.log("✅ Step 10: Orders synced successfully!");
-    }
-    else {
+    if (response.data?.data?.length === 0) {
         console.log("ℹ️ No orders found for this time range.");
     }
     return response.data;
