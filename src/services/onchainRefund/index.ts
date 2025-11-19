@@ -11,41 +11,49 @@ const prisma = new PrismaClient();
  * Service: Create Onchain Refund Order (Chapter 3.17)
  * Endpoint: /api/v1/onchain/refund/create
  */
+
 export const createOnchainRefundOrder = async (payload: {
   requestId: string;
   subMerchantId?: string;
-  payID: string;
+  payOrderId: string;
   refundAmount: number;
   chain: string;
   address: string;
   refundReason?: string;
   reference?: string;
 }) => {
-  const { requestId, subMerchantId, payID, refundAmount, chain, address, refundReason, reference } = payload;
-  const apiKey = process.env.KUCOIN_API_KEY!;
+
+  const clean = (v: string) =>
+    v
+      .replace(/(\r\n|\n|\r)/gm, "")
+      .replace(/[\u2028\u2029]/g, "")
+      .replace(/[\u200B\u200C\u200D]/g, "")
+      .replace(/\s+/g, "");
+
+  let { requestId, subMerchantId, payOrderId, refundAmount, chain, address, refundReason, reference } = payload;
+
+  const apiKey = clean(process.env.KUCOIN_API_KEY!);
+  requestId = clean(requestId);
+  payOrderId = clean(payOrderId);
+  address = clean(address);
+
   const timestamp = Date.now();
 
-  if (!requestId || !payID || !refundAmount || !chain || !address) {
-    throw new Error("Missing required parameters: requestId, payOrderId, refundAmount, chain, address");
-  }
+  const signString =
+    `address=${address}` +
+    `&apiKey=${apiKey}` +
+    `&chain=${chain}` +
+    `&payOrderId=${payOrderId}` +
+    `&refundAmount=${refundAmount}` +
+    `&requestId=${requestId}` +
+    (subMerchantId ? `&subMerchantId=${clean(subMerchantId)}` : "") +
+    `&timestamp=${timestamp}`;
 
-  // ✅ Signature string per doc (must follow this exact order)
-  const signParts: string[] = [
-    `address=${address}`,
-    `apiKey=${apiKey}`,
-    `chain=${chain}`,
-    `payOrderId=${payID}`,
-    `refundAmount=${refundAmount}`,
-    `requestId=${requestId}`,
-  ];
-  if (subMerchantId) signParts.push(`subMerchantId=${subMerchantId}`);
-  signParts.push(`timestamp=${timestamp}`);
-
-  const signString = signParts.join("&");
-  console.log("🧾 Signature String =>", signString);
+  const finalSignString = clean(signString);
+  console.log("SIGN STRING:", finalSignString);
 
   const privateKey = fs.readFileSync(path.resolve("src/keys/merchant_private.pem"), "utf8");
-  const signature = sign(signString, privateKey);
+  const signature = sign(finalSignString, privateKey);
 
   const headers = {
     "PAY-API-SIGN": signature,
@@ -54,34 +62,44 @@ export const createOnchainRefundOrder = async (payload: {
     "PAY-API-TIMESTAMP": timestamp.toString(),
     "Content-Type": "application/json",
   };
-  console.log("🛡️ Headers =>", headers);
+  console.log("HEADERS:", headers);
 
-  const body = { requestId, subMerchantId, payID, refundAmount, chain, address, refundReason, reference };
-  console.log("📦 Body =>", body);
-
+  const body = {
+    requestId,
+    subMerchantId,
+    payOrderId,
+    refundAmount,
+    chain,
+    address,
+    refundReason,
+    reference,
+  };
+  console.log("BODY:", body);
   const endpoint = `${process.env.KUCOIN_BASE_URL}/api/v1/onchain/refund/create`;
-  console.log("🌐 POST =>", endpoint);
 
   const resp = await axios.post(endpoint, body, { headers });
-  console.log("✅ API Response =>", resp.data);
 
-  // ✅ Save refund record to DB
-  const data = resp.data?.data;
+  // Save in DB correctly
   await prisma.refund.create({
     data: {
       refundRequestId: requestId,
-      payID,
+      payOrderId,                // <-- correct field
       refundAmount,
-      refundReason: refundReason || null,
-      kucoinRefundId: data?.refundId || null,
+      refundReason,
+      subMerchantId,
+      reference,
+      kucoinRefundId: resp.data?.data?.refundId || null,
+      chain,
+      address,
       status: resp.data?.success ? "SUCCESS" : "FAILED",
     },
   });
 
-
-
   return resp.data;
 };
+
+
+
 export const queryOnchainRefundOrder = async (payload: {
   refundId?: string;
   requestId?: string;
