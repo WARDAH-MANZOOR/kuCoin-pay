@@ -1,72 +1,184 @@
-// src/controllers/onchainRefundController.ts
+// // src/controllers/onchainRefundController.ts
+// import { Request, Response } from "express";
+// import { onchainRefundService } from "services/index.js";
+
+// export const createOnchainRefundOrder = async (req: Request, res: Response) => {
+//   try {
+//     console.log("📥 Incoming Create Onchain Refund Order Request:", req.body);
+//     const data = await onchainRefundService.createOnchainRefundOrder(req.body);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Onchain refund order created successfully",
+//       data,
+//     });
+//   } catch (err: any) {
+//     console.error("❌ Error creating onchain refund order:", err.message);
+//     if (err.response) {
+//       console.error("📩 KuCoin Response Data:", err.response.data);
+//       console.error("🌐 Status:", err.response.status);
+//     }
+//     res.status(500).json({
+//       success: false,
+//       error: err.message || "Internal Server Error",
+//     });
+//   }
+// };
+// export const queryOnchainRefundOrder = async (req: Request, res: Response) => {
+//   try {
+//     console.log("📥 Incoming Query Onchain Refund:", req.body);
+
+//     const data = await onchainRefundService.queryOnchainRefundOrder(req.body);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Onchain refund queried successfully",
+//       data,
+//     });
+//   } catch (err: any) {
+//     console.error("❌ Error querying onchain refund:", err.message);
+//     if (err.response) {
+//       console.error("📩 KuCoin Response Data:", err.response.data);
+//       console.error("🌐 Status:", err.response.status);
+//     }
+//     res.status(500).json({
+//       success: false,
+//       error: err.message || "Internal Server Error",
+//     });
+//   }
+// };
+
+// export const queryOnchainRefundOrderList = async (req: Request, res: Response) => {
+//   try {
+//     console.log("📥 Incoming Query Onchain Refund List:", req.body);
+
+//     const data = await onchainRefundService.queryOnchainRefundOrderList(req.body);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Onchain refund list retrieved successfully",
+//       data,
+//     });
+//   } catch (err: any) {
+//     console.error("❌ Error:", err.message);
+//     if (err.response) {
+//       console.error("📩 KuCoin Response:", err.response.data);
+//     }
+//     res.status(500).json({
+//       success: false,
+//       error: err.message,
+//     });
+//   }
+// };
+
+// export default {
+//   createOnchainRefundOrder,
+//   queryOnchainRefundOrder,
+//   queryOnchainRefundOrderList
+// };
 import { Request, Response } from "express";
 import { onchainRefundService } from "services/index.js";
 
+// ⭐ Chapter-6 mapping
+import { mapKucoinResponse } from "../../utils/kucoinMapper.js";
+import { ERROR_CODES } from "../../constants/errorCodes.js";
+
+/**
+ * Create Onchain Refund Order
+ */
 export const createOnchainRefundOrder = async (req: Request, res: Response) => {
   try {
     console.log("📥 Incoming Create Onchain Refund Order Request:", req.body);
+
     const data = await onchainRefundService.createOnchainRefundOrder(req.body);
+
+    // ⭐ Apply mapping (status, refundStatus, errorMessage)
+    const mapped = mapKucoinResponse(data);
 
     res.status(200).json({
       success: true,
       message: "Onchain refund order created successfully",
-      data,
+      data: mapped,
     });
+
   } catch (err: any) {
     console.error("❌ Error creating onchain refund order:", err.message);
-    if (err.response) {
-      console.error("📩 KuCoin Response Data:", err.response.data);
-      console.error("🌐 Status:", err.response.status);
-    }
+
+    const code = err.response?.data?.code as keyof typeof ERROR_CODES;
+    const message = ERROR_CODES[code] || err.message;
+
     res.status(500).json({
       success: false,
-      error: err.message || "Internal Server Error",
+      errorCode: code,
+      errorMessage: message,
     });
   }
 };
+
+/**
+ * Query Onchain Refund Order
+ */
 export const queryOnchainRefundOrder = async (req: Request, res: Response) => {
   try {
     console.log("📥 Incoming Query Onchain Refund:", req.body);
 
     const data = await onchainRefundService.queryOnchainRefundOrder(req.body);
 
+    // ⭐ Apply mapping
+    const mapped = mapKucoinResponse(data);
+
     res.status(200).json({
       success: true,
       message: "Onchain refund queried successfully",
-      data,
+      data: mapped,
     });
+
   } catch (err: any) {
     console.error("❌ Error querying onchain refund:", err.message);
-    if (err.response) {
-      console.error("📩 KuCoin Response Data:", err.response.data);
-      console.error("🌐 Status:", err.response.status);
-    }
+
+    const code = err.response?.data?.code as keyof typeof ERROR_CODES;
+    const message = ERROR_CODES[code] || err.message;
+
     res.status(500).json({
       success: false,
-      error: err.message || "Internal Server Error",
+      errorCode: code,
+      errorMessage: message,
     });
   }
 };
 
+/**
+ * Query Onchain Refund Order List
+ */
 export const queryOnchainRefundOrderList = async (req: Request, res: Response) => {
   try {
     console.log("📥 Incoming Query Onchain Refund List:", req.body);
 
     const data = await onchainRefundService.queryOnchainRefundOrderList(req.body);
 
+    // ⭐ Map each entry of list
+    if (Array.isArray(data?.data)) {
+      data.data = data.data.map((row: any) =>
+        mapKucoinResponse({ data: row }).data
+      );
+    }
+
     res.status(200).json({
       success: true,
       message: "Onchain refund list retrieved successfully",
       data,
     });
+
   } catch (err: any) {
-    console.error("❌ Error:", err.message);
-    if (err.response) {
-      console.error("📩 KuCoin Response:", err.response.data);
-    }
+    console.error("❌ Error querying onchain refund list:", err.message);
+
+    const code = err.response?.data?.code as keyof typeof ERROR_CODES;
+    const message = ERROR_CODES[code] || err.message;
+
     res.status(500).json({
       success: false,
-      error: err.message,
+      errorCode: code,
+      errorMessage: message,
     });
   }
 };
