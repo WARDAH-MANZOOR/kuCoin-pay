@@ -322,7 +322,7 @@ export const queryPayoutInfo = async (payload: {
     requestId: requestId || "",
     timestamp,
   };
-
+  console.log("🧾 Signature Params =>", params);
   // 🔹 Step 2 – Build signature string (exclude empty)
   const signString = Object.entries(params)
     .filter(([_, v]) => v !== "" && v !== undefined)
@@ -344,7 +344,7 @@ export const queryPayoutInfo = async (payload: {
     "PAY-API-TIMESTAMP": timestamp.toString(),
     "Content-Type": "application/json",
   };
-
+  console.log("📦 Headers =>", headers);
   // 🔹 Step 5 – Body
   const body = batchNo ? { batchNo } : { requestId };
   console.log("🧰 Body =>", body);
@@ -401,7 +401,7 @@ export const queryPayoutDetail = async (payload: {
     requestId,
     timestamp,
   };
-
+  console.log("🧾 Signature Params =>", params);
   // 🔹 Step 2 – Build signature string
   const signString = Object.entries(params)
     .filter(([_, v]) => v !== "" && v !== undefined)
@@ -423,7 +423,7 @@ export const queryPayoutDetail = async (payload: {
     "PAY-API-TIMESTAMP": timestamp.toString(),
     "Content-Type": "application/json",
   };
-
+  console.log("📦 Headers =>", headers);
   // 🔹 Step 5 – Body
   const body = receiverUID
     ? { requestId, receiverUID }
@@ -480,6 +480,7 @@ export const queryOnchainCurrency = async (payload: { cryptoCurrency: string }) 
     cryptoCurrency,
     timestamp,
   };
+  console.log("🔑 Signature Params:", params);
 
   // Step 2 – Build signature string
   const signString = `apiKey=${params.apiKey}&cryptoCurrency=${cryptoCurrency}&timestamp=${timestamp}`;

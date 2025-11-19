@@ -1,27 +1,30 @@
 import { payoutOrderService } from "services/index.js";
+// ⭐ Add mapping + error codes
+import { mapKucoinResponse } from "../../utils/kucoinMapper.js";
+import { ERROR_CODES } from "../../constants/errorCodes.js";
 /**
  * Controller: Create Payout Order (Chapter 3.9)
- * Handles HTTP request and response for creating payout batches.
  */
 export const createPayoutOrder = async (req, res) => {
     try {
         console.log("📥 Incoming Payout Order Request:", req.body);
         const data = await payoutOrderService.createPayoutOrder(req.body);
+        // ⭐ Apply status + error mapping
+        const mapped = mapKucoinResponse(data);
         res.status(200).json({
             success: true,
             message: "Payout order created successfully",
-            data,
+            data: mapped,
         });
     }
     catch (err) {
         console.error("❌ Error creating payout order:", err.message);
-        if (err.response) {
-            console.error("📩 KuCoin Response Data:", err.response.data);
-            console.error("🌐 Status:", err.response.status);
-        }
+        const code = err.response?.data?.code;
+        const message = ERROR_CODES[code] || err.message;
         res.status(500).json({
             success: false,
-            error: err.message || "Internal Server Error",
+            errorCode: code,
+            errorMessage: message,
         });
     }
 };
@@ -32,21 +35,22 @@ export const queryPayoutInfo = async (req, res) => {
     try {
         console.log("📥 Incoming Query Payout Info Request:", req.body);
         const data = await payoutOrderService.queryPayoutInfo(req.body);
+        // ⭐ Apply mapping
+        const mapped = mapKucoinResponse(data);
         res.status(200).json({
             success: true,
             message: "Payout info retrieved successfully",
-            data,
+            data: mapped,
         });
     }
     catch (err) {
         console.error("❌ Error querying payout info:", err.message);
-        if (err.response) {
-            console.error("📩 KuCoin Response Data:", err.response.data);
-            console.error("🌐 Status:", err.response.status);
-        }
+        const code = err.response?.data?.code;
+        const message = ERROR_CODES[code] || err.message;
         res.status(500).json({
             success: false,
-            error: err.message || "Internal Server Error",
+            errorCode: code,
+            errorMessage: message,
         });
     }
 };
@@ -57,72 +61,74 @@ export const queryPayoutDetail = async (req, res) => {
     try {
         console.log("📥 Incoming Query Payout Detail Request:", req.body);
         const data = await payoutOrderService.queryPayoutDetail(req.body);
+        // ⭐ Apply mapping
+        const mapped = mapKucoinResponse(data);
         res.status(200).json({
             success: true,
             message: "Payout detail retrieved successfully",
-            data,
+            data: mapped,
         });
     }
     catch (err) {
         console.error("❌ Error querying payout detail:", err.message);
-        if (err.response) {
-            console.error("📩 KuCoin Response Data:", err.response.data);
-            console.error("🌐 Status:", err.response.status);
-        }
+        const code = err.response?.data?.code;
+        const message = ERROR_CODES[code] || err.message;
         res.status(500).json({
             success: false,
-            error: err.message || "Internal Server Error",
+            errorCode: code,
+            errorMessage: message,
         });
     }
 };
 /**
  * Controller: Query On-Chain Currency (Chapter 3.12)
- * Retrieve supported networks for the specific crypto currency
  */
 export const queryOnchainCurrency = async (req, res) => {
     try {
         console.log("📥 Incoming On-Chain Currency Query Request:", req.body);
         const data = await payoutOrderService.queryOnchainCurrency(req.body);
+        // ⭐ Apply mapping
+        const mapped = mapKucoinResponse(data);
         res.status(200).json({
             success: true,
             message: "On-chain currency details retrieved successfully",
-            data,
+            data: mapped,
         });
     }
     catch (err) {
         console.error("❌ Error querying on-chain currencies:", err.message);
-        if (err.response) {
-            console.error("📩 KuCoin Response Data:", err.response.data);
-            console.error("🌐 Status:", err.response.status);
-        }
+        const code = err.response?.data?.code;
+        const message = ERROR_CODES[code] || err.message;
         res.status(500).json({
             success: false,
-            error: err.message || "Internal Server Error",
+            errorCode: code,
+            errorMessage: message,
         });
     }
 };
-/** 3.13 ONCHAIN CURRENCY QUOTE — Controller
- * Retrieve currency exchange rate
+/**
+ * Controller: Query Onchain Currency Quote (Chapter 3.13)
  */
 export const queryOnchainCurrencyQuote = async (req, res) => {
     try {
         console.log("📥 Incoming Onchain Quote Request:", req.body);
         const data = await payoutOrderService.queryOnchainCurrencyQuote(req.body);
+        // ⭐ Apply mapping
+        const mapped = mapKucoinResponse(data);
         res.status(200).json({
             success: true,
             message: "Onchain currency quote retrieved successfully",
-            data,
+            data: mapped,
         });
     }
     catch (err) {
         console.error("❌ Error querying onchain currency quote:", err.message);
-        if (err.response) {
-            console.error("📩 KuCoin Response Data:", err.response.data);
-            console.error("🌐 Status:", err.response.status);
-        }
+        const code = err.response?.data?.code;
+        const message = ERROR_CODES[code] || err.message;
         res.status(500).json({
             success: false,
-            error: err.message || "Internal Server Error",
+            errorCode: code,
+            errorMessage: message,
         });
     }
 };
