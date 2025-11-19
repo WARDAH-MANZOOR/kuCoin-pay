@@ -1,29 +1,51 @@
 import { PrismaClient } from "@prisma/client";
 import { orderService } from "services/index.js";
+import { mapKucoinResponse } from "../../utils/kucoinMapper.js";
+import { ERROR_CODES } from "../../constants/errorCodes.js";
 const prisma = new PrismaClient();
 /**
  * Controller: Create Order (Chapter 3----3.1)
  * Handles HTTP layer only — validation + response.
  */
+// export const createOrder = async (req: Request, res: Response) => {
+//   try {
+//     console.log("📥 Incoming Order Request:", req.body);
+//     const data = await orderService.createOrder(req.body);
+//     res.status(200).json({
+//       success: true,
+//       message: "Order created successfully",
+//       data,
+//     });
+//   } catch (err: any) {
+//     console.error("❌ Error creating order:", err.message);
+//     if (err.response) {
+//       console.error("📩 KuCoin Response Data:", err.response.data);
+//       console.error("🌐 Status:", err.response.status);
+//     }
+//     res.status(500).json({
+//       success: false,
+//       error: err.message || "Internal Server Error",
+//     });
+//   }
+// };
 export const createOrder = async (req, res) => {
     try {
-        console.log("📥 Incoming Order Request:", req.body);
         const data = await orderService.createOrder(req.body);
+        // ⭐ Apply mapping
+        const mapped = mapKucoinResponse(data);
         res.status(200).json({
             success: true,
             message: "Order created successfully",
-            data,
+            data: mapped,
         });
     }
     catch (err) {
-        console.error("❌ Error creating order:", err.message);
-        if (err.response) {
-            console.error("📩 KuCoin Response Data:", err.response.data);
-            console.error("🌐 Status:", err.response.status);
-        }
+        const code = err.response?.data?.code;
+        const message = ERROR_CODES[code] || err.message;
         res.status(500).json({
             success: false,
-            error: err.message || "Internal Server Error",
+            errorCode: code,
+            errorMessage: message,
         });
     }
 };
@@ -31,25 +53,44 @@ export const createOrder = async (req, res) => {
  * Controller: Query Order (Chapter 3.2)
  * Validates request and delegates to the service.
  */
+// export const queryOrder = async (req: Request, res: Response) => {
+//   try {
+//     console.log("📥 Incoming Query Order Request:", req.body);
+//     const data = await orderService.queryOrder(req.body);
+//     res.status(200).json({
+//       success: true,
+//       message: "Order query successful",
+//       data,
+//     });
+//   } catch (err: any) {
+//     console.error("❌ Error querying order:", err.message);
+//     if (err.response) {
+//       console.error("📩 KuCoin Response Data:", err.response.data);
+//       console.error("🌐 Status:", err.response.status);
+//     }
+//     res.status(500).json({
+//       success: false,
+//       error: err.message || "Internal Server Error",
+//     });
+//   }
+// };
 export const queryOrder = async (req, res) => {
     try {
-        console.log("📥 Incoming Query Order Request:", req.body);
         const data = await orderService.queryOrder(req.body);
+        const mapped = mapKucoinResponse(data);
         res.status(200).json({
             success: true,
             message: "Order query successful",
-            data,
+            data: mapped,
         });
     }
     catch (err) {
-        console.error("❌ Error querying order:", err.message);
-        if (err.response) {
-            console.error("📩 KuCoin Response Data:", err.response.data);
-            console.error("🌐 Status:", err.response.status);
-        }
+        const code = err.response?.data?.code;
+        const message = ERROR_CODES[code] || err.message;
         res.status(500).json({
             success: false,
-            error: err.message || "Internal Server Error",
+            errorCode: code,
+            errorMessage: message,
         });
     }
 };
@@ -57,25 +98,47 @@ export const queryOrder = async (req, res) => {
  * Controller: Query Order List (Chapter 3.3)
  * Handles request validation & response handling only.
  */
+// export const queryOrderList = async (req: Request, res: Response) => {
+//   try {
+//     console.log("📥 Incoming Query Order List Request:", req.body);
+//     const data = await orderService.queryOrderList(req.body);
+//     res.status(200).json({
+//       success: true,
+//       message: "Order list retrieved and synced successfully",
+//       data,
+//     });
+//   } catch (err: any) {
+//     console.error("❌ Error querying order list:", err.message);
+//     if (err.response) {
+//       console.error("📩 KuCoin Response Data:", err.response.data);
+//       console.error("🌐 Status:", err.response.status);
+//     }
+//     res.status(500).json({
+//       success: false,
+//       error: err.message || "Internal Server Error",
+//     });
+//   }
+// };
 export const queryOrderList = async (req, res) => {
     try {
-        console.log("📥 Incoming Query Order List Request:", req.body);
         const data = await orderService.queryOrderList(req.body);
+        // ⭐ Map every entry
+        if (Array.isArray(data?.data)) {
+            data.data = data.data.map((row) => mapKucoinResponse({ data: row }).data);
+        }
         res.status(200).json({
             success: true,
-            message: "Order list retrieved and synced successfully",
+            message: "Order list retrieved successfully",
             data,
         });
     }
     catch (err) {
-        console.error("❌ Error querying order list:", err.message);
-        if (err.response) {
-            console.error("📩 KuCoin Response Data:", err.response.data);
-            console.error("🌐 Status:", err.response.status);
-        }
+        const code = err.response?.data?.code;
+        const message = ERROR_CODES[code] || err.message;
         res.status(500).json({
             success: false,
-            error: err.message || "Internal Server Error",
+            errorCode: code,
+            errorMessage: message,
         });
     }
 };
@@ -84,25 +147,44 @@ export const queryOrderList = async (req, res) => {
  * Handles HTTP request/response.
  * Enables merchant to close an unpaid order before expiry.
  */
+// export const closeOrder = async (req: Request, res: Response) => {
+//   try {
+//     console.log("📥 Incoming Close Order Request:", req.body);
+//     const data = await orderService.closeOrder(req.body);
+//     res.status(200).json({
+//       success: true,
+//       message: "Order closed successfully",
+//       data,
+//     });
+//   } catch (err: any) {
+//     console.error("❌ Error closing order:", err.message);
+//     if (err.response) {
+//       console.error("📩 KuCoin Response Data:", err.response.data);
+//       console.error("🌐 Status:", err.response.status);
+//     }
+//     res.status(500).json({
+//       success: false,
+//       error: err.message || "Internal Server Error",
+//     });
+//   }
+// };
 export const closeOrder = async (req, res) => {
     try {
-        console.log("📥 Incoming Close Order Request:", req.body);
         const data = await orderService.closeOrder(req.body);
+        const mapped = mapKucoinResponse(data);
         res.status(200).json({
             success: true,
             message: "Order closed successfully",
-            data,
+            data: mapped,
         });
     }
     catch (err) {
-        console.error("❌ Error closing order:", err.message);
-        if (err.response) {
-            console.error("📩 KuCoin Response Data:", err.response.data);
-            console.error("🌐 Status:", err.response.status);
-        }
+        const code = err.response?.data?.code;
+        const message = ERROR_CODES[code] || err.message;
         res.status(500).json({
             success: false,
-            error: err.message || "Internal Server Error",
+            errorCode: code,
+            errorMessage: message,
         });
     }
 };
