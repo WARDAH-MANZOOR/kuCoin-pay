@@ -16,29 +16,7 @@ const prisma = new PrismaClient();
  * Initiates a refund (full or partial) for a KuCoin Pay order.
  * Handles HTTP request/response for initiating refunds.
  */
-// export const refundOrder = async (req: Request, res: Response) => {
-//   try {
-//     console.log("📥 Incoming Refund Request:", req.body);
 
-//     const data = await refundService.refundOrder(req.body);
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Refund request processed successfully",
-//       data,
-//     });
-//   } catch (err: any) {
-//     console.error("❌ Error processing refund:", err.message);
-//     if (err.response) {
-//       console.error("📩 KuCoin Response Data:", err.response.data);
-//       console.error("🌐 Status:", err.response.status);
-//     }
-//     res.status(500).json({
-//       success: false,
-//       error: err.message || "Internal Server Error",
-//     });
-//   }
-// };
 
 export const refundOrder = async (req: Request, res: Response) => {
   try {
@@ -77,29 +55,7 @@ export const refundOrder = async (req: Request, res: Response) => {
     refundId (from KuCoin Pay’s response to refund/create), or
     requestId (the merchant’s own refund request ID).
 */
-// export const queryRefund = async (req: Request, res: Response) => {
-//   try {
-//     console.log("📥 Incoming Refund Query Request:", req.body);
 
-//     const data = await refundService.queryRefund(req.body);
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Refund status queried successfully",
-//       data,
-//     });
-//   } catch (err: any) {
-//     console.error("❌ Error querying refund:", err.message);
-//     if (err.response) {
-//       console.error("📩 KuCoin Response Data:", err.response.data);
-//       console.error("🌐 Status:", err.response.status);
-//     }
-//     res.status(500).json({
-//       success: false,
-//       error: err.message || "Internal Server Error",
-//     });
-//   }
-// };
 export const queryRefund = async (req: Request, res: Response) => {
   try {
     console.log("📥 Incoming Refund Query Request:", req.body);
@@ -133,29 +89,7 @@ export const queryRefund = async (req: Request, res: Response) => {
  * Handles Express HTTP request/response for refund list retrieval.
  * Retrieves paginated list of refund orders within a specific time range.
  */
-// export const queryRefundList = async (req: Request, res: Response) => {
-//   try {
-//     console.log("📥 Incoming Refund List Request:", req.body);
 
-//     const data = await refundService.queryRefundList(req.body);
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Refund list retrieved successfully",
-//       data,
-//     });
-//   } catch (err: any) {
-//     console.error("❌ Error querying refund list:", err.message);
-//     if (err.response) {
-//       console.error("📩 KuCoin Response Data:", err.response.data);
-//       console.error("🌐 Status:", err.response.status);
-//     }
-//     res.status(500).json({
-//       success: false,
-//       error: err.message || "Internal Server Error",
-//     });
-//   }
-// };
 export const queryRefundList = async (req: Request, res: Response) => {
   try {
     console.log("📥 Incoming Refund List Request:", req.body);
